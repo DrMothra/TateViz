@@ -3,6 +3,8 @@
  */
 //Visualisation framework
 
+var NUM_NODES = 9;
+
 //Init this app from base
 function Tate() {
     BaseApp.call(this);
@@ -22,10 +24,14 @@ Tate.prototype.createScene = function() {
     BaseApp.prototype.createScene.call(this);
 
     //Load example object
-    var boxGeom = new THREE.BoxGeometry(10, 10, 10);
-    var mat = new THREE.MeshPhongMaterial({color: 0xb5b5b5, transparent: false, opacity: 0.5});
-    var box = new THREE.Mesh(boxGeom, mat);
-    this.scene.add(box);
+    var sphereGeom = new THREE.SphereBufferGeometry(10, 16, 16);
+    var sphereMat = new THREE.MeshPhongMaterial({color: 0xb5b5b5, transparent: false, opacity: 0.5});
+    var i;
+    this.nodes = [];
+    for(i=0; i<NUM_NODES; ++i) {
+        this.nodes.push(new THREE.Mesh(sphereGeom, sphereMat));
+        this.scene.add(this.nodes[i]);
+    }
 };
 
 Tate.prototype.createGUI = function() {
