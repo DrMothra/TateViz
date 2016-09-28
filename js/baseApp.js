@@ -12,7 +12,7 @@ function BaseApp() {
     this.container = null;
     this.objectList = [];
     this.root = null;
-    this.mouse = { startX:0, startY:0};
+    this.mouse = new THREE.Vector2();
     this.pickedObjects = [];
     this.selectedObject = null;
     this.hoverObjects = [];
@@ -20,6 +20,7 @@ function BaseApp() {
     this.elapsedTime = 0;
     this.clock = new THREE.Clock();
     this.clock.start();
+    this.raycaster = new THREE.Raycaster();
     this.objectsPicked = false;
 }
 
@@ -29,7 +30,8 @@ BaseApp.prototype.init = function(container) {
     this.createCamera();
     this.createControls();
     this.stats = initStats();
-    this.statsShowing = true;
+    this.statsShowing = false;
+    $("#Stats-output").hide();
 };
 
 BaseApp.prototype.createRenderer = function() {
@@ -88,6 +90,7 @@ BaseApp.prototype.keydown = function(event) {
 
 BaseApp.prototype.mouseClicked = function(event) {
     //Update mouse state
+    event.preventDefault();
     this.pickedObjects.length = 0;
 
     if(event.type == 'mouseup') {
@@ -97,9 +100,15 @@ BaseApp.prototype.mouseClicked = function(event) {
         this.objectsPicked = false;
         return;
     }
-    this.mouse.startX = (event.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.startY = (event.clientY / window.innerHeight) * 2 + 1;
+    this.mouse.set((event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1);
     this.mouse.down = true;
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    var intersects = this.raycaster.intersectObjects( this.scene.children );
+    if(intersects.length > 0) {
+        console.log("Picked ", intersects[0]);
+        this.selectedObject = intersects[0].object;
+    }
 };
 
 BaseApp.prototype.mouseMoved = function(event) {
@@ -110,10 +119,10 @@ BaseApp.prototype.mouseMoved = function(event) {
 
 BaseApp.prototype.windowResize = function(event) {
     //Handle window resize
-    this.camera.aspect = this.container.clientWidth / window.innerHeight;
+    this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
 
-    this.renderer.setSize( this.container.clientWidth, window.innerHeight);
+    this.renderer.setSize( window.innerWidth, window.innerHeight);
     //console.log('Size =', )
 };
 
