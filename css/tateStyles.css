@@ -26,3 +26,10 @@
     margin-left: 33%;
     width: 25%;
 }
+.dg .c input[type=text] {
+
+    line-height:normal;
+}
+.dg .c div {
+    box-sizing: content-box;
+}

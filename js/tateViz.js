@@ -33,7 +33,7 @@ Tate.prototype.createScene = function() {
     this.showInfo = false;
 
     //Load example object
-    var sphereGeom = new THREE.SphereBufferGeometry(10, 16, 16);
+    var sphereGeom = new THREE.SphereBufferGeometry(10, 24, 24);
     var i=1;
     var sphereMat = [];
     sphereMat.push(new THREE.MeshPhongMaterial( {color: 0xff0000} ));
@@ -83,6 +83,7 @@ Tate.prototype.createScene = function() {
     var from, to;
     var nodeFrom, nodeTo;
     var lineGeom, line;
+    var lineGroup = new THREE.Object3D();
     this.lines = [];
     for(i=0; i<numNodes; ++i) {
         if(this.links[i]) {
@@ -94,7 +95,8 @@ Tate.prototype.createScene = function() {
             lineGeom.vertices.push(from, to);
             line = new THREE.Line(lineGeom, i<2 ? lineMats[0] : i<8 ? lineMats[1] : lineMats[2]);
             this.lines.push(line);
-            this.scene.add(line);
+            lineGroup.add(line);
+            this.scene.add(lineGroup);
         }
     }
 };
