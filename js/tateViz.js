@@ -56,11 +56,53 @@ Tate.prototype.createScene = function() {
         "brown": new THREE.MeshPhongMaterial({color: 0x894414})
     };
 
+    //Groups
+    var nodeGroupNames = [
+        "Artists",
+        "Researchers",
+        "Curators",
+        "Instigators",
+        "Performances",
+        "Interventions",
+        "Exhibitions",
+        "Initiatives",
+        "Other",
+        "Institutions - Art",
+        "Institutions - Other",
+        "Public"
+    ];
+    var numGroups = nodeGroupNames.length;
+
+    //Arrange groups
+    var i;
+    var groupRadius = 300, groupAngle = (Math.PI*2) / numGroups, group;
+    var nodeGroups = [];
+    var sphereGeom = new THREE.SphereBufferGeometry(20, 32, 32);
+    var sphereMat = new THREE.MeshPhongMaterial( {color: 0xffffff, transparent: true, opacity: 0.5} );
+    var sphere;
+    var label, labelOffset = 15;
+    var labelScale = new THREE.Vector3(80, 60, 1);
+    var pos = new THREE.Vector3();
+    for(i=0; i<numGroups; ++i) {
+        group = new THREE.Object3D();
+        group.name = nodeGroupNames[i];
+        pos.set(groupRadius * Math.sin(groupAngle*i), 0, groupRadius * Math.cos(groupAngle*i));
+        group.position.copy(pos);
+        nodeGroups.push(group);
+        sphere = new THREE.Mesh(sphereGeom, sphereMat);
+        sphere.position.copy(group.position);
+        this.scene.add(sphere);
+        pos.y += labelOffset;
+        label = spriteManager.create(nodeGroupNames[i], pos, labelScale, 32, 1, true, false);
+        this.scene.add(label);
+    }
+
+    /*
     var row, col, xStart = -100, xInc = 100, yStart = 0, zStart = -100, zInc = 100;
     var sphere, label, labelOffset = 10;
     var labelScale = new THREE.Vector3(30, 30, 1);
     var pos = new THREE.Vector3();
-    var i=1;
+    i=1;
     this.nodes = [];
     this.labels = [];
     for(row=0; row<NUM_ROWS; ++row) {
@@ -79,8 +121,10 @@ Tate.prototype.createScene = function() {
             ++i;
         }
     }
+    */
 
     //Create links
+    /*
     var numNodes = this.nodes.length;
     this.links = [];
     for(i=0; i<numNodes; ++i) {
@@ -116,6 +160,7 @@ Tate.prototype.createScene = function() {
             this.scene.add(lineGroup);
         }
     }
+    */
 };
 
 Tate.prototype.createGUI = function() {
@@ -239,7 +284,7 @@ Tate.prototype.resetCamera = function() {
     this.selectedObject = undefined;
     this.showInfo = false;
     $('#info').hide();
-    this.camera.position.set(0, 150, 360);
+    this.camera.position.copy(this.defaultCamPos);
     this.controls.setLookAt(new THREE.Vector3());
 };
 

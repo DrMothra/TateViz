@@ -155,8 +155,9 @@ BaseApp.prototype.createScene = function() {
 
 BaseApp.prototype.createCamera = function() {
 
+    this.defaultCamPos = new THREE.Vector3(0, 250, 600);
     this.camera = new THREE.PerspectiveCamera(45, this.container.clientWidth / window.innerHeight, 0.1, 5000 );
-    this.camera.position.set(0, 150, 360 );
+    this.camera.position.copy(this.defaultCamPos);
 
     console.log('dom =', this.renderer.domElement);
 };
