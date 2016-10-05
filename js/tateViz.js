@@ -32,23 +32,40 @@ Tate.prototype.createScene = function() {
     this.viewOffset = new THREE.Vector3(0, 20, 70);
     this.showInfo = false;
 
-    //Load example object
-    var sphereGeom = new THREE.SphereBufferGeometry(10, 24, 24);
-    var i=1;
-    var sphereMat = [];
-    sphereMat.push(new THREE.MeshPhongMaterial( {color: 0xff0000} ));
-    sphereMat.push(new THREE.MeshPhongMaterial( {color: 0x00ff00} ));
-    sphereMat.push(new THREE.MeshPhongMaterial( {color: 0x0000ff} ));
+    //Define all object types
+    var sphereRad = 10, sphereSegments = 24;
+    var cubeWidth = 20, cubeHeight = 20, cubeDepth = 20;
+    var radiusTop = 10, radiusBottom = 10, cylinderHeight = 10, cylSegments = 16;
+    var octRadius = 10, octDetail = 0;
+    var nodeShapes = {
+        "sphere": new THREE.SphereBufferGeometry(sphereRad, sphereSegments, sphereSegments),
+        "cube": new THREE.BoxBufferGeometry(cubeWidth, cubeHeight, cubeDepth),
+        "cylinder": new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, cylinderHeight, cylSegments, cylSegments),
+        "octahedron": new THREE.OctahedronGeometry(octRadius, octDetail)
+
+    };
+    //Object materials
+    var nodeMats = {
+        "red": new THREE.MeshPhongMaterial({color: 0xff0000}),
+        "green": new THREE.MeshPhongMaterial({color: 0x00ff00}),
+        "darkBlue": new THREE.MeshPhongMaterial({color: 0x1d26bb}),
+        "lightBlue": new THREE.MeshPhongMaterial({color: 0x6aa8de}),
+        "orange": new THREE.MeshPhongMaterial({color: 0xf05d0e}),
+        "yellow": new THREE.MeshPhongMaterial({color: 0xe1d413}),
+        "purple": new THREE.MeshPhongMaterial({color: 0x5e17de}),
+        "brown": new THREE.MeshPhongMaterial({color: 0x894414})
+    };
 
     var row, col, xStart = -100, xInc = 100, yStart = 0, zStart = -100, zInc = 100;
     var sphere, label, labelOffset = 10;
     var labelScale = new THREE.Vector3(30, 30, 1);
     var pos = new THREE.Vector3();
+    var i=1;
     this.nodes = [];
     this.labels = [];
     for(row=0; row<NUM_ROWS; ++row) {
         for(col=0; col<NUM_COLS; ++col) {
-            sphere = new THREE.Mesh(sphereGeom, sphereMat[row]);
+            sphere = new THREE.Mesh(nodeShapes["cube"], nodeMats["yellow"]);
             this.nodes.push(sphere);
             sphere.name = "Artwork" + i;
             pos.set(xStart + (xInc * col), yStart, zStart + (zInc * row));
