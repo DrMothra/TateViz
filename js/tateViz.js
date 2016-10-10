@@ -18,6 +18,12 @@ Tate.prototype = new BaseApp();
 
 Tate.prototype.init = function(container) {
     BaseApp.prototype.init.call(this, container);
+
+    //Camera animation
+    this.camAnimating = false;
+    this.cameraPath = new THREE.Vector3();
+    this.camAnimateTime = 3;
+
     //GUI
     this.guiControls = null;
     this.gui = null;
@@ -32,32 +38,8 @@ Tate.prototype.createScene = function() {
     this.viewOffset = new THREE.Vector3(0, 20, 70);
     this.showInfo = false;
 
-    //Define all object types
-    var sphereRad = 10, sphereSegments = 24;
-    var cubeWidth = 20, cubeHeight = 20, cubeDepth = 20;
-    var radiusTop = 10, radiusBottom = 10, cylinderHeight = 10, cylSegments = 16;
-    var octRadius = 10, octDetail = 0;
-    var nodeShapes = {
-        "sphere": new THREE.SphereBufferGeometry(sphereRad, sphereSegments, sphereSegments),
-        "cube": new THREE.BoxBufferGeometry(cubeWidth, cubeHeight, cubeDepth),
-        "cylinder": new THREE.CylinderBufferGeometry(radiusTop, radiusBottom, cylinderHeight, cylSegments, cylSegments),
-        "octahedron": new THREE.OctahedronGeometry(octRadius, octDetail)
-
-    };
-    //Object materials
-    var nodeMats = {
-        "red": new THREE.MeshPhongMaterial({color: 0xff0000}),
-        "green": new THREE.MeshPhongMaterial({color: 0x00ff00}),
-        "darkBlue": new THREE.MeshPhongMaterial({color: 0x1d26bb}),
-        "lightBlue": new THREE.MeshPhongMaterial({color: 0x6aa8de}),
-        "orange": new THREE.MeshPhongMaterial({color: 0xf05d0e}),
-        "yellow": new THREE.MeshPhongMaterial({color: 0xe1d413}),
-        "purple": new THREE.MeshPhongMaterial({color: 0x5e17de}),
-        "brown": new THREE.MeshPhongMaterial({color: 0x894414})
-    };
-
     //Groups
-    var nodeGroupNames = [
+    var nodeGroupTypes = [
         "Artists",
         "Researchers",
         "Curators",
@@ -71,7 +53,7 @@ Tate.prototype.createScene = function() {
         "Institutions - Other",
         "Public"
     ];
-    var numGroups = nodeGroupNames.length;
+    var numGroups = nodeGroupTypes.length;
 
     //Arrange groups
     var i;
@@ -85,15 +67,16 @@ Tate.prototype.createScene = function() {
     var pos = new THREE.Vector3();
     for(i=0; i<numGroups; ++i) {
         group = new THREE.Object3D();
-        group.name = nodeGroupNames[i];
+        group.name = nodeGroupTypes[i];
         pos.set(groupRadius * Math.sin(groupAngle*i), 0, groupRadius * Math.cos(groupAngle*i));
         group.position.copy(pos);
         nodeGroups.push(group);
+        this.scene.add(group);
         sphere = new THREE.Mesh(sphereGeom, sphereMat);
         sphere.position.copy(group.position);
         this.scene.add(sphere);
         pos.y += labelOffset;
-        label = spriteManager.create(nodeGroupNames[i], pos, labelScale, 32, 1, true, false);
+        label = spriteManager.create(nodeGroupTypes[i], pos, labelScale, 32, 1, true, false);
         this.scene.add(label);
     }
 
@@ -161,6 +144,95 @@ Tate.prototype.createScene = function() {
         }
     }
     */
+
+    //Sort nodes into categories
+    var type, j, node;
+    for(i=0; i<tateData.length; ++i) {
+        type = tateData[i]["Type of node"];
+        for(j=0; j<numGroups; ++j) {
+            if(type === nodeGroupTypes[j]) break;
+        }
+        node = this.createNode(type);
+        if(node) {
+            nodeGroups[j].add(node);
+        }
+    }
+};
+
+Tate.prototype.createNode = function(type) {
+    //Create node according to type
+    var geom = undefined, material = undefined, node;
+    switch(type) {
+        case "Artists":
+            geom = SHAPES.Shapes['sphere'];
+            material = SHAPES.Materials['red'];
+            break;
+
+        case "Researchers":
+            geom = SHAPES.Shapes['cube'];
+            material = SHAPES.Materials['orange'];
+            break;
+
+        case "Curators":
+            geom = SHAPES.Shapes['cylinder'];
+            material = SHAPES.Materials['yellow'];
+            break;
+
+        case "Instigators":
+            geom = SHAPES.Shapes['octahedron'];
+            material = SHAPES.Materials['green'];
+            break;
+
+        case "Performances":
+            geom = SHAPES.Shapes['cone'];
+            material = SHAPES.Materials['darkBlue'];
+            break;
+
+        case "Interventions":
+            geom = SHAPES.Shapes['torus'];
+            material = SHAPES.Materials['lightBlue'];
+            break;
+
+        case "Exhibitions":
+            geom = SHAPES.Shapes['sphere'];
+            material = SHAPES.Materials['purple'];
+            break;
+
+        case "Initiatives":
+            geom = SHAPES.Shapes['cube'];
+            material = SHAPES.Materials['brown'];
+            break;
+
+        case "Other":
+            geom = SHAPES.Shapes['cylinder'];
+            material = SHAPES.Materials['red'];
+            break;
+
+        case "Institutions - Art":
+            geom = SHAPES.Shapes['octahedron'];
+            material = SHAPES.Materials['orange'];
+            break;
+
+        case "Institutions - Other":
+            geom = SHAPES.Shapes['cone'];
+            material = SHAPES.Materials['yellow'];
+            break;
+
+        case "Public":
+            geom = SHAPES.Shapes['torus'];
+            material = SHAPES.Materials['green'];
+            break;
+
+        default:
+            console.log("No type defined");
+            break;
+    }
+    if(geom && material) {
+        node = new THREE.Mesh(geom, material);
+        return node;
+    } else {
+        return null;
+    }
 };
 
 Tate.prototype.createGUI = function() {
@@ -268,14 +340,18 @@ Tate.prototype.linkChange = function(visible, colour) {
 Tate.prototype.update = function() {
     //Perform any updates
 
-    if(this.selectedObject && !this.showInfo) {
+    var delta = THREE.clock.getDelta();
+
+    if(this.selectedObject && !this.camAnimating) {
         this.tempPos.copy(this.selectedObject.position);
         this.tempPos.add(this.viewOffset);
+        this.zoomTo(this.tempPos);
+        this.camAnimating = true;
+    }
+
+    if(this.camAnimating) {
         this.camera.position.set(this.tempPos.x, this.tempPos.y, this.tempPos.z );
         this.controls.setLookAt(this.selectedObject.position);
-        this.showInfo = true;
-        $('#info').show();
-        $('#infoName').html(this.selectedObject.name);
     }
     BaseApp.prototype.update.call(this);
 };
@@ -286,6 +362,12 @@ Tate.prototype.resetCamera = function() {
     $('#info').hide();
     this.camera.position.copy(this.defaultCamPos);
     this.controls.setLookAt(new THREE.Vector3());
+};
+
+Tate.prototype.zoomTo = function(zoomPos) {
+    this.cameraPath.copy(zoomPos);
+    this.cameraPath.sub(this.camera.position);
+    this.camAnimateSpeed = this.cameraPath.length()/this.camAnimateTime;
 };
 
 $(document).ready(function() {
