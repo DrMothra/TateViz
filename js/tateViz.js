@@ -23,6 +23,7 @@ Tate.prototype.init = function(container) {
     this.camAnimating = false;
     this.cameraPath = new THREE.Vector3();
     this.camAnimateTime = 3;
+    this.incPos = new THREE.Vector3();
 
     //GUI
     this.guiControls = null;
@@ -340,19 +341,29 @@ Tate.prototype.linkChange = function(visible, colour) {
 Tate.prototype.update = function() {
     //Perform any updates
 
-    var delta = THREE.clock.getDelta();
+    var delta = this.clock.getDelta();
 
     if(this.selectedObject && !this.camAnimating) {
         this.tempPos.copy(this.selectedObject.position);
-        this.tempPos.add(this.viewOffset);
+        this.controls.setLookAt(this.selectedObject.position);
         this.zoomTo(this.tempPos);
         this.camAnimating = true;
+        this.selectedObject = null;
     }
 
     if(this.camAnimating) {
-        this.camera.position.set(this.tempPos.x, this.tempPos.y, this.tempPos.z );
-        this.controls.setLookAt(this.selectedObject.position);
+        this.elapsedTime += delta;
+        if(this.elapsedTime >= this.camAnimateTime) {
+            this.camAnimating = false;
+            this.elapsedTime = 0;
+            this.camera.position.copy(this.tempPos);
+        } else {
+            this.incPos.multiplyScalar(delta/this.camAnimateTime);
+            this.camera.position.add(this.incPos);
+            this.incPos.copy(this.cameraPath);
+        }
     }
+
     BaseApp.prototype.update.call(this);
 };
 
@@ -367,6 +378,7 @@ Tate.prototype.resetCamera = function() {
 Tate.prototype.zoomTo = function(zoomPos) {
     this.cameraPath.copy(zoomPos);
     this.cameraPath.sub(this.camera.position);
+    this.incPos.copy(this.cameraPath);
     this.camAnimateSpeed = this.cameraPath.length()/this.camAnimateTime;
 };
 
