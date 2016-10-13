@@ -21,9 +21,12 @@ Tate.prototype.init = function(container) {
 
     //Camera animation
     this.camAnimating = false;
+    this.camRotating = false;
     this.cameraPath = new THREE.Vector3();
     this.camAnimateTime = 3;
     this.incPos = new THREE.Vector3();
+    this.camRotateTime = 1;
+    this.currentLookAt = new THREE.Vector3();
 
     //GUI
     this.guiControls = null;
@@ -343,12 +346,29 @@ Tate.prototype.update = function() {
 
     var delta = this.clock.getDelta();
 
-    if(this.selectedObject && !this.camAnimating) {
+    if(this.selectedObject && !this.camRotating) {
         this.tempPos.copy(this.selectedObject.position);
-        this.controls.setLookAt(this.selectedObject.position);
-        this.zoomTo(this.tempPos);
-        this.camAnimating = true;
+        this.currentLookAt.copy(this.controls.getLookAt());
+        this.rotateCameraTo(this.selectedObject.position);
+        this.camRotating = true;
         this.selectedObject = null;
+    }
+
+    if(this.camRotating) {
+        this.elapsedTime += delta;
+        if(this.elapsedTime >= this.camRotateTime) {
+            this.camRotating = false;
+            this.elapsedTime = 0;
+            this.controls.setLookAt(this.tempPos);
+            this.currentLookAt.copy(this.tempPos);
+            this.zoomTo(this.tempPos);
+            this.camAnimating = true;
+        } else {
+            this.incPos.multiplyScalar(delta/this.camRotateTime);
+            this.currentLookAt.add(this.incPos);
+            this.controls.setLookAt(this.currentLookAt);
+            this.incPos.copy(this.cameraPath);
+        }
     }
 
     if(this.camAnimating) {
@@ -379,7 +399,13 @@ Tate.prototype.zoomTo = function(zoomPos) {
     this.cameraPath.copy(zoomPos);
     this.cameraPath.sub(this.camera.position);
     this.incPos.copy(this.cameraPath);
-    this.camAnimateSpeed = this.cameraPath.length()/this.camAnimateTime;
+};
+
+Tate.prototype.rotateCameraTo = function(pos) {
+    //Alter lookat over set period
+    this.cameraPath.copy(pos);
+    this.cameraPath.sub(this.currentLookAt);
+    this.incPos.copy(this.cameraPath);
 };
 
 $(document).ready(function() {
