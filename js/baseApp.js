@@ -5,7 +5,8 @@
 
 function BaseApp() {
     this.renderer = null;
-    this.scene = null;
+    this.scenes = [];
+    this.currentScene = 0;
     this.camera = null;
     this.controls = null;
     this.stats = null;
@@ -104,10 +105,17 @@ BaseApp.prototype.mouseClicked = function(event) {
         -(event.clientY / window.innerHeight) * 2 + 1);
     this.mouse.down = true;
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    var intersects = this.raycaster.intersectObjects( this.scene.children );
+    var intersects = this.raycaster.intersectObjects( this.scenes[this.currentScene].children, true );
     if(intersects.length > 0) {
-        console.log("Picked ", intersects[0]);
-        this.selectedObject = intersects[0].object;
+        //Ignore sprites
+        for(var i=0; i<intersects.length; ++i) {
+            if(intersects[i].object.type !== "Sprite") {
+                console.log("Picked ", intersects[i]);
+                this.selectedObject = intersects[i].object;
+                return;
+            }
+        }
+        return null;
     }
 };
 
@@ -127,10 +135,12 @@ BaseApp.prototype.windowResize = function(event) {
 };
 
 BaseApp.prototype.createScene = function() {
-    this.scene = new THREE.Scene();
+
+    var scene = new THREE.Scene();
+    this.scenes.push(scene);
 
     var ambientLight = new THREE.AmbientLight(0x383838);
-    this.scene.add(ambientLight);
+    scene.add(ambientLight);
 
     /*
     var spotLight = new THREE.SpotLight(0xffffff);
@@ -146,11 +156,10 @@ BaseApp.prototype.createScene = function() {
     */
 
 
-    this.pointLight = new THREE.PointLight(0xffffff);
-    this.pointLight.position.set(0,100,0);
-    this.pointLight.name = 'PointLight';
-    this.scene.add(this.pointLight);
-
+    var pointLight = new THREE.PointLight(0xffffff);
+    pointLight.position.set(0,100,0);
+    pointLight.name = 'PointLight';
+    scene.add(pointLight);
 };
 
 BaseApp.prototype.createCamera = function() {
@@ -188,7 +197,7 @@ BaseApp.prototype.update = function() {
 };
 
 BaseApp.prototype.run = function() {
-    this.renderer.render( this.scene, this.camera );
+    this.renderer.render( this.scenes[this.currentScene], this.camera );
     var _this = this;
     this.update();
     if(this.stats) this.stats.update();

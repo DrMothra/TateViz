@@ -61,8 +61,9 @@ Tate.prototype.createScene = function() {
 
     //Arrange groups
     var i;
-    var groupRadius = 300, groupAngle = (Math.PI*2) / numGroups, group;
-    var nodeGroups = [];
+    var groupRadius = 300, groupAngle = (Math.PI*2) / numGroups, group, scene;
+    var type, j, node;
+    var mainNodeGroups = [];
     var sphereGeom = new THREE.SphereBufferGeometry(20, 32, 32);
     var sphereMat = new THREE.MeshPhongMaterial( {color: 0xffffff, transparent: true, opacity: 0.5} );
     var sphere;
@@ -74,83 +75,30 @@ Tate.prototype.createScene = function() {
         group.name = nodeGroupTypes[i];
         pos.set(groupRadius * Math.sin(groupAngle*i), 0, groupRadius * Math.cos(groupAngle*i));
         group.position.copy(pos);
-        nodeGroups.push(group);
-        this.scene.add(group);
+        mainNodeGroups.push(group);
+        this.scenes[this.currentScene].add(group);
         sphere = new THREE.Mesh(sphereGeom, sphereMat);
-        sphere.position.copy(group.position);
-        this.scene.add(sphere);
-        pos.y += labelOffset;
+        group.add(sphere);
+        node = this.createNode(nodeGroupTypes[i]);
+        group.add(node);
+        pos.set(0, labelOffset, 0);
         label = spriteManager.create(nodeGroupTypes[i], pos, labelScale, 32, 1, true, false);
-        this.scene.add(label);
+        group.add(label);
+        BaseApp.prototype.createScene.call(this);
     }
 
-    /*
-    var row, col, xStart = -100, xInc = 100, yStart = 0, zStart = -100, zInc = 100;
-    var sphere, label, labelOffset = 10;
-    var labelScale = new THREE.Vector3(30, 30, 1);
-    var pos = new THREE.Vector3();
-    i=1;
-    this.nodes = [];
-    this.labels = [];
-    for(row=0; row<NUM_ROWS; ++row) {
-        for(col=0; col<NUM_COLS; ++col) {
-            sphere = new THREE.Mesh(nodeShapes["cube"], nodeMats["yellow"]);
-            this.nodes.push(sphere);
-            sphere.name = "Artwork" + i;
-            pos.set(xStart + (xInc * col), yStart, zStart + (zInc * row));
-            sphere.position.set(pos.x, pos.y, pos.z);
-            this.scene.add(sphere);
-            pos.y += labelOffset;
-            label = spriteManager.create("Artwork "+i, pos, labelScale, 32, 1, true, false);
-            label.name = "Artwork" + i;
-            this.labels.push(label);
-            this.scene.add(label);
-            ++i;
-        }
-    }
-    */
-
-    //Create links
-    /*
-    var numNodes = this.nodes.length;
-    this.links = [];
-    for(i=0; i<numNodes; ++i) {
-        this.links.push(undefined);
-    }
-    this.links[0] = 4;
-    this.links[1] = 3;
-    this.links[2] = 7;
-    this.links[4] = 6;
-    this.links[8] = 4;
-
-    var lineMats = [];
-    lineMats.push(new THREE.LineBasicMaterial( {color: 0xff0000}),
-        new THREE.LineBasicMaterial( {color: 0x00ff00}),
-        new THREE.LineBasicMaterial( {color: 0x0000ff}));
-
-    var from, to;
-    var nodeFrom, nodeTo;
-    var lineGeom, line;
-    var lineGroup = new THREE.Object3D();
-    this.lines = [];
-    for(i=0; i<numNodes; ++i) {
-        if(this.links[i]) {
-            nodeFrom = this.nodes[i];
-            from = new THREE.Vector3(nodeFrom.position.x, nodeFrom.position.y, nodeFrom.position.z);
-            nodeTo = this.nodes[this.links[i]];
-            to = new THREE.Vector3(nodeTo.position.x, nodeTo.position.y, nodeTo.position.z);
-            lineGeom = new THREE.Geometry();
-            lineGeom.vertices.push(from, to);
-            line = new THREE.Line(lineGeom, i<2 ? lineMats[0] : i<8 ? lineMats[1] : lineMats[2]);
-            this.lines.push(line);
-            lineGroup.add(line);
-            this.scene.add(lineGroup);
-        }
-    }
-    */
+    this.nodeGroupTypes = nodeGroupTypes;
 
     //Sort nodes into categories
-    var type, j, node;
+    //Internal nodes in different scenes
+    var internalNodeGroups = [];
+    for(i=0; i<numGroups; ++i) {
+        group = new THREE.Object3D();
+        group.name = nodeGroupTypes[i]+"Internal";
+        internalNodeGroups.push(group);
+        this.scenes[i+1].add(group);
+    }
+
     for(i=0; i<tateData.length; ++i) {
         type = tateData[i]["Type of node"];
         for(j=0; j<numGroups; ++j) {
@@ -158,7 +106,7 @@ Tate.prototype.createScene = function() {
         }
         node = this.createNode(type);
         if(node) {
-            nodeGroups[j].add(node);
+            internalNodeGroups[j].add(node);
         }
     }
 };
@@ -347,9 +295,11 @@ Tate.prototype.update = function() {
     var delta = this.clock.getDelta();
 
     if(this.selectedObject && !this.camRotating) {
-        this.tempPos.copy(this.selectedObject.position);
+        this.parent = this.selectedObject.parent;
+        var world = this.parent.position.setFromMatrixPosition(this.selectedObject.matrixWorld);
+        this.tempPos.copy(world);
         this.currentLookAt.copy(this.controls.getLookAt());
-        this.rotateCameraTo(this.selectedObject.position);
+        this.rotateCameraTo(world);
         this.camRotating = true;
         this.selectedObject = null;
     }
@@ -377,6 +327,11 @@ Tate.prototype.update = function() {
             this.camAnimating = false;
             this.elapsedTime = 0;
             this.camera.position.copy(this.tempPos);
+            this.resetCamera();
+            this.currentScene = this.getScene(this.parent.name);
+            if(this.currentScene === undefined) {
+                console.log("No scene detected!");
+            }
         } else {
             this.incPos.multiplyScalar(delta/this.camAnimateTime);
             this.camera.position.add(this.incPos);
@@ -406,6 +361,16 @@ Tate.prototype.rotateCameraTo = function(pos) {
     this.cameraPath.copy(pos);
     this.cameraPath.sub(this.currentLookAt);
     this.incPos.copy(this.cameraPath);
+};
+
+Tate.prototype.getScene = function(name) {
+    //Get scene number from name
+    //Scene 0 is always default scene
+    for(var i=0; i<this.nodeGroupTypes.length; ++i) {
+        if(this.nodeGroupTypes[i] === name) return i+1;
+    }
+
+    return undefined;
 };
 
 $(document).ready(function() {
