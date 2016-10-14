@@ -20,6 +20,7 @@ Tate.prototype.init = function(container) {
     BaseApp.prototype.init.call(this, container);
 
     //Camera animation
+    this.zoomAllowed = true;
     this.camAnimating = false;
     this.camRotating = false;
     this.cameraPath = new THREE.Vector3();
@@ -107,8 +108,15 @@ Tate.prototype.createScene = function() {
         node = this.createNode(type);
         if(node) {
             internalNodeGroups[j].add(node);
+            node.name = tateData[i]["Node name"];
         }
     }
+
+    //Display nodes within each group
+    for(i=0; i<internalNodeGroups.length; ++i) {
+        this.sortNodes(internalNodeGroups[i]);
+    }
+    this.internalNodeGroups = internalNodeGroups;
 };
 
 Tate.prototype.createNode = function(type) {
@@ -184,6 +192,23 @@ Tate.prototype.createNode = function(type) {
         return node;
     } else {
         return null;
+    }
+};
+
+Tate.prototype.sortNodes = function(group) {
+    //Arrange nodes in group
+    var numChildren = group.children.length;
+    var groupRadius = 300, groupAngle = (Math.PI*2) / numChildren;
+    var label, node, labelOffset = 10;
+    var pos = new THREE.Vector3();
+    var labelScale = new THREE.Vector3(80, 60, 1);
+    for(var i=0; i<numChildren; ++i) {
+        node = group.children[i];
+        node.position.set(groupRadius * Math.sin(groupAngle*i), 0, groupRadius * Math.cos(groupAngle*i));
+        pos.copy(node.position);
+        pos.y += labelOffset;
+        label = spriteManager.create(node.name, pos, labelScale, 32, 1, true, false);
+        group.add(label);
     }
 };
 
@@ -294,7 +319,7 @@ Tate.prototype.update = function() {
 
     var delta = this.clock.getDelta();
 
-    if(this.selectedObject && !this.camRotating) {
+    if(this.selectedObject && !this.camRotating && this.zoomAllowed) {
         this.parent = this.selectedObject.parent;
         var world = this.parent.position.setFromMatrixPosition(this.selectedObject.matrixWorld);
         this.tempPos.copy(world);
@@ -302,6 +327,7 @@ Tate.prototype.update = function() {
         this.rotateCameraTo(world);
         this.camRotating = true;
         this.selectedObject = null;
+        this.zoomAllowed = false;
     }
 
     if(this.camRotating) {
@@ -332,6 +358,9 @@ Tate.prototype.update = function() {
             if(this.currentScene === undefined) {
                 console.log("No scene detected!");
             }
+            $('#groupType').html(this.parent.name + ' = ');
+            $('#groupNumber').html(this.getNumNodes(this.currentScene));
+            $('#groupInfo').show();
         } else {
             this.incPos.multiplyScalar(delta/this.camAnimateTime);
             this.camera.position.add(this.incPos);
@@ -348,6 +377,12 @@ Tate.prototype.resetCamera = function() {
     $('#info').hide();
     this.camera.position.copy(this.defaultCamPos);
     this.controls.setLookAt(new THREE.Vector3());
+};
+
+Tate.prototype.goHome = function() {
+    this.currentScene = 0;
+    this.zoomAllowed = true;
+    this.resetCamera();
 };
 
 Tate.prototype.zoomTo = function(zoomPos) {
@@ -373,6 +408,10 @@ Tate.prototype.getScene = function(name) {
     return undefined;
 };
 
+Tate.prototype.getNumNodes = function(sceneNum) {
+    return this.internalNodeGroups[sceneNum-1].children.length;
+};
+
 $(document).ready(function() {
     //Initialise app
     var container = document.getElementById("WebGL-output");
@@ -382,8 +421,8 @@ $(document).ready(function() {
     app.createGUI();
 
     //GUI callbacks
-    $('#infoOK').on("click", function() {
-        app.resetCamera();
+    $('#home').on("click", function() {
+        app.goHome();
     });
     app.run();
 });

@@ -33,3 +33,12 @@
 .dg .c div {
     box-sizing: content-box;
 }
+#navigation {
+    bottom: 1%;
+    left: 1%;
+    width: 10%;
+}
+#groupInfo {
+    top: 1%;
+    left: 40%;
+}
