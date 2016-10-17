@@ -9,6 +9,8 @@ var WIDTH = 0;
 var HEIGHT = 1;
 var RED=0, BLUE=1, GREEN=2;
 
+var NONE=0, ZOOM=1, INFO=2;
+
 //Init this app from base
 function Tate() {
     BaseApp.call(this);
@@ -18,6 +20,9 @@ Tate.prototype = new BaseApp();
 
 Tate.prototype.init = function(container) {
     BaseApp.prototype.init.call(this, container);
+
+    //Interactions
+    this.interactionState = ZOOM;
 
     //Camera animation
     this.zoomAllowed = true;
@@ -109,6 +114,12 @@ Tate.prototype.createScene = function() {
         if(node) {
             internalNodeGroups[j].add(node);
             node.name = tateData[i]["Node name"];
+            node.index = i;
+            node.links = [];
+            //DEBUG
+            if(i === 43) {
+                node.links.push(50, 56, 59);
+            }
         }
     }
 
@@ -117,6 +128,12 @@ Tate.prototype.createScene = function() {
         this.sortNodes(internalNodeGroups[i]);
     }
     this.internalNodeGroups = internalNodeGroups;
+    //Link to other nodes in same group for now
+    /*
+    for(i=0; i<internalNodeGroups.length; ++i) {
+        this.createLinks(internalNodeGroups[i]);
+    }
+    */
 };
 
 Tate.prototype.createNode = function(type) {
@@ -209,6 +226,23 @@ Tate.prototype.sortNodes = function(group) {
         pos.y += labelOffset;
         label = spriteManager.create(node.name, pos, labelScale, 32, 1, true, false);
         group.add(label);
+    }
+};
+
+Tate.prototype.createLinks = function(group) {
+    //Create links to other nodes
+    var numChildren = group.children.length;
+    var node;
+    var pos = new THREE.Vector3();
+    var lineGeoms = [];
+    for(var i=0; i<numChildren; ++i) {
+        node = group.children[i];
+        if(node.links.length > 0) {
+            pos.copy(node.position);
+            for(var j=0; j<node.links.length; ++j) {
+
+            }
+        }
     }
 };
 
@@ -319,54 +353,77 @@ Tate.prototype.update = function() {
 
     var delta = this.clock.getDelta();
 
-    if(this.selectedObject && !this.camRotating && this.zoomAllowed) {
-        this.parent = this.selectedObject.parent;
-        var world = this.parent.position.setFromMatrixPosition(this.selectedObject.matrixWorld);
-        this.tempPos.copy(world);
-        this.currentLookAt.copy(this.controls.getLookAt());
-        this.rotateCameraTo(world);
-        this.camRotating = true;
-        this.selectedObject = null;
-        this.zoomAllowed = false;
-    }
+    switch (this.interactionState) {
+        case NONE:
+            break;
 
-    if(this.camRotating) {
-        this.elapsedTime += delta;
-        if(this.elapsedTime >= this.camRotateTime) {
-            this.camRotating = false;
-            this.elapsedTime = 0;
-            this.controls.setLookAt(this.tempPos);
-            this.currentLookAt.copy(this.tempPos);
-            this.zoomTo(this.tempPos);
-            this.camAnimating = true;
-        } else {
-            this.incPos.multiplyScalar(delta/this.camRotateTime);
-            this.currentLookAt.add(this.incPos);
-            this.controls.setLookAt(this.currentLookAt);
-            this.incPos.copy(this.cameraPath);
-        }
-    }
-
-    if(this.camAnimating) {
-        this.elapsedTime += delta;
-        if(this.elapsedTime >= this.camAnimateTime) {
-            this.camAnimating = false;
-            this.elapsedTime = 0;
-            this.camera.position.copy(this.tempPos);
-            this.resetCamera();
-            this.currentScene = this.getScene(this.parent.name);
-            if(this.currentScene === undefined) {
-                console.log("No scene detected!");
+        case ZOOM:
+            if(this.selectedObject && !this.camRotating && this.zoomAllowed) {
+                this.parent = this.selectedObject.parent;
+                var world = this.parent.position.setFromMatrixPosition(this.selectedObject.matrixWorld);
+                this.tempPos.copy(world);
+                this.currentLookAt.copy(this.controls.getLookAt());
+                this.rotateCameraTo(world);
+                this.camRotating = true;
+                this.selectedObject = null;
+                this.zoomAllowed = false;
             }
-            $('#groupType').html(this.parent.name + ' = ');
-            $('#groupNumber').html(this.getNumNodes(this.currentScene));
-            $('#groupInfo').show();
-        } else {
-            this.incPos.multiplyScalar(delta/this.camAnimateTime);
-            this.camera.position.add(this.incPos);
-            this.incPos.copy(this.cameraPath);
-        }
+
+            if(this.camRotating) {
+                this.elapsedTime += delta;
+                if(this.elapsedTime >= this.camRotateTime) {
+                    this.camRotating = false;
+                    this.elapsedTime = 0;
+                    this.controls.setLookAt(this.tempPos);
+                    this.currentLookAt.copy(this.tempPos);
+                    this.zoomTo(this.tempPos);
+                    this.camAnimating = true;
+                } else {
+                    this.incPos.multiplyScalar(delta/this.camRotateTime);
+                    this.currentLookAt.add(this.incPos);
+                    this.controls.setLookAt(this.currentLookAt);
+                    this.incPos.copy(this.cameraPath);
+                }
+            }
+
+            if(this.camAnimating) {
+                this.elapsedTime += delta;
+                if(this.elapsedTime >= this.camAnimateTime) {
+                    this.camAnimating = false;
+                    this.elapsedTime = 0;
+                    this.camera.position.copy(this.tempPos);
+                    this.resetCamera();
+                    this.currentScene = this.getScene(this.parent.name);
+                    if(this.currentScene === undefined) {
+                        console.log("No scene detected!");
+                    }
+                    $('#groupType').html(this.parent.name + ' = ');
+                    $('#groupNumber').html(this.getNumNodes(this.currentScene));
+                    $('#groupInfo').show();
+                    this.interactionState = INFO;
+                } else {
+                    this.incPos.multiplyScalar(delta/this.camAnimateTime);
+                    this.camera.position.add(this.incPos);
+                    this.incPos.copy(this.cameraPath);
+                }
+            }
+            break;
+
+        case INFO:
+            if(this.selectedObject) {
+                var record = this.getNodeData(this.selectedObject);
+                $('#nodeName').html(record["Node name"]);
+                $('#nodeDescription').html(record["Description"]);
+                $('#nodeImage').attr("src", record["Image link"] !== "" ? record["Image link"] : "images/imgHolder.jpg");
+                $('#nodeInformation').show();
+                this.selectedObject = null;
+            }
+            break;
+
+        default:
+            break;
     }
+
 
     BaseApp.prototype.update.call(this);
 };
@@ -382,6 +439,8 @@ Tate.prototype.resetCamera = function() {
 Tate.prototype.goHome = function() {
     this.currentScene = 0;
     this.zoomAllowed = true;
+    $("#nodeInformation").hide();
+    this.interactionState = ZOOM;
     this.resetCamera();
 };
 
@@ -408,6 +467,22 @@ Tate.prototype.getScene = function(name) {
     return undefined;
 };
 
+Tate.prototype.getNodeData = function(node) {
+    //Use index in node to retrieve data
+    if(node.index === undefined) {
+        console.log("No node index!!");
+        return null;
+    }
+
+    //DEBUG
+    console.log("Index = ", node.index);
+    return tateData[node.index];
+};
+
+Tate.prototype.hideInfoPanel = function() {
+    $('#nodeInformation').hide();
+};
+
 Tate.prototype.getNumNodes = function(sceneNum) {
     return this.internalNodeGroups[sceneNum-1].children.length;
 };
@@ -424,5 +499,10 @@ $(document).ready(function() {
     $('#home').on("click", function() {
         app.goHome();
     });
+
+    $('#nodeInfoOK').on("click", function() {
+        app.hideInfoPanel();
+    });
+
     app.run();
 });
