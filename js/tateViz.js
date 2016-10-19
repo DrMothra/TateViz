@@ -115,11 +115,14 @@ Tate.prototype.createScene = function() {
             internalNodeGroups[j].add(node);
             node.name = tateData[i]["Node name"];
             node.index = i;
-            node.links = [];
-            //DEBUG
-            if(i === 43) {
-                node.links.push(50, 56, 59);
-            }
+
+            node.linksInspired = tateData[i]["Inspired by"] !== null ? tateData[i]["Inspired by"] : [];
+            node.linksInspire = tateData[i]["Inspires"] !== null ? tateData[i]["Inspires"] : [];
+            node.linksOppose = tateData[i]["In opposition to"] !== null ? tateData[i]["In opposition to"] : [];
+            node.linksResponse = tateData[i]["In response to"] !== null ? tateData[i]["In response to"] : [];
+            node.linksWorks = tateData[i]["Works with"] !== null ? tateData[i]["Works with"] : [];
+            node.linksAssociate = tateData[i]["Associated with"] !== null ? tateData[i]["Associated with"] : [];
+            node.linksExhibited = tateData[i]["Exhibited with"] !== null ? tateData[i]["Exhibited with"] : [];
         }
     }
 
@@ -129,11 +132,9 @@ Tate.prototype.createScene = function() {
     }
     this.internalNodeGroups = internalNodeGroups;
     //Link to other nodes in same group for now
-    /*
     for(i=0; i<internalNodeGroups.length; ++i) {
         this.createLinks(internalNodeGroups[i]);
     }
-    */
 };
 
 Tate.prototype.createNode = function(type) {
@@ -229,18 +230,121 @@ Tate.prototype.sortNodes = function(group) {
     }
 };
 
+function nodeInGroup(nodeIndex, group) {
+    //See if this node in this group
+    var child, i;
+    for(i=0; i<group.children.length; ++i) {
+        child = group.children[i];
+        if(child instanceof THREE.Mesh) {
+            if(nodeIndex === child.index) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+};
+
+Tate.prototype.getNodePos = function(nodeIndex) {
+    //Search groups for this node and get pos
+    var i, j,child;
+    for(i=0; i<this.internalNodeGroups.length; ++i) {
+        for(j=0; j<this.internalNodeGroups[i].children.length; ++j) {
+            child = this.internalNodeGroups[i].children[j];
+            if(child instanceof THREE.Mesh) {
+                if(child.index === nodeIndex) {
+                    return child.position;
+                }
+            }
+        }
+    }
+
+    return null;
+};
+
+Tate.prototype.drawLink = function(from, to, group, lineColour) {
+    var lineGeom = new THREE.Geometry();
+    lineGeom.vertices.push(from, to);
+    var link = new THREE.Line(lineGeom, lineColour);
+    group.add(link);
+};
+
 Tate.prototype.createLinks = function(group) {
     //Create links to other nodes
     var numChildren = group.children.length;
-    var node;
-    var pos = new THREE.Vector3();
-    var lineGeoms = [];
-    for(var i=0; i<numChildren; ++i) {
+    var node, i, j, toNodeIndex, toNodePos = new THREE.Vector3();
+    for(i=0; i<numChildren; ++i) {
         node = group.children[i];
-        if(node.links.length > 0) {
-            pos.copy(node.position);
-            for(var j=0; j<node.links.length; ++j) {
-
+        if(node instanceof THREE.Mesh) {
+            if(node["linksInspired"].length !== 0) {
+                //See if links are in group
+                for(j=0; j<node.linksInspired.length; ++j) {
+                    toNodeIndex = node.linksInspired[j];
+                    if(nodeInGroup(toNodeIndex, group)) {
+                        toNodePos = this.getNodePos(toNodeIndex);
+                        this.drawLink(node.position, toNodePos, group, LINES.LineColours['red']);
+                    }
+                }
+            }
+            if(node.linksInspire.length !== 0) {
+                //See if links are in group
+                for(j=0; j<node.linksInspire.length; ++j) {
+                    toNodeIndex = node.linksInspire[j];
+                    if(nodeInGroup(toNodeIndex, group)) {
+                        toNodePos = this.getNodePos(toNodeIndex);
+                        this.drawLink(node.position, toNodePos, group, LINES.LineColours['green']);
+                    }
+                }
+            }
+            if(node.linksOppose.length !== 0) {
+                //See if links are in group
+                for(j=0; j<node.linksOppose.length; ++j) {
+                    toNodeIndex = node.linksOppose[j];
+                    if(nodeInGroup(toNodeIndex, group)) {
+                        toNodePos = this.getNodePos(toNodeIndex);
+                        this.drawLink(node.position, toNodePos, group, LINES.LineColours['darkBlue']);
+                    }
+                }
+            }
+            if(node.linksResponse.length !== 0) {
+                //See if links are in group
+                for(j=0; j<node.linksResponse.length; ++j) {
+                    toNodeIndex = node.linksResponse[j];
+                    if(nodeInGroup(toNodeIndex, group)) {
+                        toNodePos = this.getNodePos(toNodeIndex);
+                        this.drawLink(node.position, toNodePos, group, LINES.LineColours['yellow']);
+                    }
+                }
+            }
+            if(node.linksWorks.length !== 0) {
+                //See if links are in group
+                for(j=0; j<node.linksWorks.length; ++j) {
+                    toNodeIndex = node.linksWorks[j];
+                    if(nodeInGroup(toNodeIndex, group)) {
+                        toNodePos = this.getNodePos(toNodeIndex);
+                        this.drawLink(node.position, toNodePos, group, LINES.LineColours['orange']);
+                    }
+                }
+            }
+            if(node.linksAssociate.length !== 0) {
+                //See if links are in group
+                for(j=0; j<node.linksAssociate.length; ++j) {
+                    toNodeIndex = node.linksAssociate[j];
+                    if(nodeInGroup(toNodeIndex, group)) {
+                        toNodePos = this.getNodePos(toNodeIndex);
+                        this.drawLink(node.position, toNodePos, group, LINES.LineColours['purple']);
+                    }
+                }
+            }
+            if(node.linksExhibited.length !== 0) {
+                //See if links are in group
+                for(j=0; j<node.linksExhibited.length; ++j) {
+                    toNodeIndex = node.linksExhibited[j];
+                    if(nodeInGroup(toNodeIndex, group)) {
+                        toNodePos = this.getNodePos(toNodeIndex);
+                        this.drawLink(node.position, toNodePos, group, LINES.LineColours['lightBlue']);
+                    }
+                }
             }
         }
     }
