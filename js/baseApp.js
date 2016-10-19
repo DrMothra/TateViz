@@ -160,6 +160,8 @@ BaseApp.prototype.createScene = function() {
     pointLight.position.set(0,100,0);
     pointLight.name = 'PointLight';
     scene.add(pointLight);
+
+    return this.scenes.length-1;
 };
 
 BaseApp.prototype.createCamera = function() {

@@ -38,6 +38,10 @@
     left: 1%;
     width: 10%;
 }
+#showNodes {
+    bottom: 1%;
+    right: 1%;
+}
 #groupInfo {
     top: 1%;
     left: 40%;

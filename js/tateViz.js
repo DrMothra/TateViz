@@ -128,13 +128,42 @@ Tate.prototype.createScene = function() {
 
     //Display nodes within each group
     for(i=0; i<internalNodeGroups.length; ++i) {
-        this.sortNodes(internalNodeGroups[i]);
+        this.sortNodes(internalNodeGroups[i], 300);
     }
     this.internalNodeGroups = internalNodeGroups;
     //Link to other nodes in same group for now
     for(i=0; i<internalNodeGroups.length; ++i) {
-        this.createLinks(internalNodeGroups[i]);
+        this.createLinks(internalNodeGroups[i], true);
     }
+
+    //Draw everything
+    group = new THREE.Object3D();
+    group.name = "allNodes";
+    this.mainScene = BaseApp.prototype.createScene.call(this);
+    this.scenes[this.mainScene].add(group);
+    for(i=0; i<tateData.length; ++i) {
+        type = tateData[i]["Type of node"];
+        for (j = 0; j < numGroups; ++j) {
+            if (type === nodeGroupTypes[j]) break;
+        }
+        node = this.createNode(type);
+        if (node) {
+            group.add(node);
+            node.name = tateData[i]["Node name"];
+            node.index = i;
+
+            node.linksInspired = tateData[i]["Inspired by"] !== null ? tateData[i]["Inspired by"] : [];
+            node.linksInspire = tateData[i]["Inspires"] !== null ? tateData[i]["Inspires"] : [];
+            node.linksOppose = tateData[i]["In opposition to"] !== null ? tateData[i]["In opposition to"] : [];
+            node.linksResponse = tateData[i]["In response to"] !== null ? tateData[i]["In response to"] : [];
+            node.linksWorks = tateData[i]["Works with"] !== null ? tateData[i]["Works with"] : [];
+            node.linksAssociate = tateData[i]["Associated with"] !== null ? tateData[i]["Associated with"] : [];
+            node.linksExhibited = tateData[i]["Exhibited with"] !== null ? tateData[i]["Exhibited with"] : [];
+        }
+    }
+    this.mainGroup = group;
+    this.sortNodes(group, 400);
+    this.createLinks(group, false);
 };
 
 Tate.prototype.createNode = function(type) {
@@ -213,16 +242,16 @@ Tate.prototype.createNode = function(type) {
     }
 };
 
-Tate.prototype.sortNodes = function(group) {
+Tate.prototype.sortNodes = function(group, radius) {
     //Arrange nodes in group
     var numChildren = group.children.length;
-    var groupRadius = 300, groupAngle = (Math.PI*2) / numChildren;
+    var groupAngle = (Math.PI*2) / numChildren;
     var label, node, labelOffset = 10;
     var pos = new THREE.Vector3();
     var labelScale = new THREE.Vector3(80, 60, 1);
     for(var i=0; i<numChildren; ++i) {
         node = group.children[i];
-        node.position.set(groupRadius * Math.sin(groupAngle*i), 0, groupRadius * Math.cos(groupAngle*i));
+        node.position.set(radius * Math.sin(groupAngle*i), 0, radius * Math.cos(groupAngle*i));
         pos.copy(node.position);
         pos.y += labelOffset;
         label = spriteManager.create(node.name, pos, labelScale, 32, 1, true, false);
@@ -245,15 +274,26 @@ function nodeInGroup(nodeIndex, group) {
     return false;
 };
 
-Tate.prototype.getNodePos = function(nodeIndex) {
+Tate.prototype.getNodePos = function(nodeIndex, internal) {
     //Search groups for this node and get pos
     var i, j,child;
-    for(i=0; i<this.internalNodeGroups.length; ++i) {
-        for(j=0; j<this.internalNodeGroups[i].children.length; ++j) {
-            child = this.internalNodeGroups[i].children[j];
+    if(!internal) {
+        for(i=0; i<this.mainGroup.children.length; ++i) {
+            child = this.mainGroup.children[i];
             if(child instanceof THREE.Mesh) {
                 if(child.index === nodeIndex) {
                     return child.position;
+                }
+            }
+        }
+    } else {
+        for(i=0; i<this.internalNodeGroups.length; ++i) {
+            for(j=0; j<this.internalNodeGroups[i].children.length; ++j) {
+                child = this.internalNodeGroups[i].children[j];
+                if(child instanceof THREE.Mesh) {
+                    if(child.index === nodeIndex) {
+                        return child.position;
+                    }
                 }
             }
         }
@@ -269,10 +309,11 @@ Tate.prototype.drawLink = function(from, to, group, lineColour) {
     group.add(link);
 };
 
-Tate.prototype.createLinks = function(group) {
+Tate.prototype.createLinks = function(group, checkGroup) {
     //Create links to other nodes
     var numChildren = group.children.length;
     var node, i, j, toNodeIndex, toNodePos = new THREE.Vector3();
+    var validNode;
     for(i=0; i<numChildren; ++i) {
         node = group.children[i];
         if(node instanceof THREE.Mesh) {
@@ -280,8 +321,9 @@ Tate.prototype.createLinks = function(group) {
                 //See if links are in group
                 for(j=0; j<node.linksInspired.length; ++j) {
                     toNodeIndex = node.linksInspired[j];
-                    if(nodeInGroup(toNodeIndex, group)) {
-                        toNodePos = this.getNodePos(toNodeIndex);
+                    validNode = checkGroup ?  nodeInGroup(toNodeIndex, group) : true;
+                    if(validNode) {
+                        toNodePos = this.getNodePos(toNodeIndex, checkGroup);
                         this.drawLink(node.position, toNodePos, group, LINES.LineColours['red']);
                     }
                 }
@@ -290,8 +332,9 @@ Tate.prototype.createLinks = function(group) {
                 //See if links are in group
                 for(j=0; j<node.linksInspire.length; ++j) {
                     toNodeIndex = node.linksInspire[j];
-                    if(nodeInGroup(toNodeIndex, group)) {
-                        toNodePos = this.getNodePos(toNodeIndex);
+                    validNode = checkGroup ?  nodeInGroup(toNodeIndex, group) : true;
+                    if(validNode) {
+                        toNodePos = this.getNodePos(toNodeIndex, checkGroup);
                         this.drawLink(node.position, toNodePos, group, LINES.LineColours['green']);
                     }
                 }
@@ -300,8 +343,9 @@ Tate.prototype.createLinks = function(group) {
                 //See if links are in group
                 for(j=0; j<node.linksOppose.length; ++j) {
                     toNodeIndex = node.linksOppose[j];
-                    if(nodeInGroup(toNodeIndex, group)) {
-                        toNodePos = this.getNodePos(toNodeIndex);
+                    validNode = checkGroup ?  nodeInGroup(toNodeIndex, group) : true;
+                    if(validNode) {
+                        toNodePos = this.getNodePos(toNodeIndex, checkGroup);
                         this.drawLink(node.position, toNodePos, group, LINES.LineColours['darkBlue']);
                     }
                 }
@@ -310,8 +354,9 @@ Tate.prototype.createLinks = function(group) {
                 //See if links are in group
                 for(j=0; j<node.linksResponse.length; ++j) {
                     toNodeIndex = node.linksResponse[j];
-                    if(nodeInGroup(toNodeIndex, group)) {
-                        toNodePos = this.getNodePos(toNodeIndex);
+                    validNode = checkGroup ?  nodeInGroup(toNodeIndex, group) : true;
+                    if(validNode) {
+                        toNodePos = this.getNodePos(toNodeIndex, checkGroup);
                         this.drawLink(node.position, toNodePos, group, LINES.LineColours['yellow']);
                     }
                 }
@@ -320,8 +365,9 @@ Tate.prototype.createLinks = function(group) {
                 //See if links are in group
                 for(j=0; j<node.linksWorks.length; ++j) {
                     toNodeIndex = node.linksWorks[j];
-                    if(nodeInGroup(toNodeIndex, group)) {
-                        toNodePos = this.getNodePos(toNodeIndex);
+                    validNode = checkGroup ?  nodeInGroup(toNodeIndex, group) : true;
+                    if(validNode) {
+                        toNodePos = this.getNodePos(toNodeIndex, checkGroup);
                         this.drawLink(node.position, toNodePos, group, LINES.LineColours['orange']);
                     }
                 }
@@ -330,8 +376,9 @@ Tate.prototype.createLinks = function(group) {
                 //See if links are in group
                 for(j=0; j<node.linksAssociate.length; ++j) {
                     toNodeIndex = node.linksAssociate[j];
-                    if(nodeInGroup(toNodeIndex, group)) {
-                        toNodePos = this.getNodePos(toNodeIndex);
+                    validNode = checkGroup ?  nodeInGroup(toNodeIndex, group) : true;
+                    if(validNode) {
+                        toNodePos = this.getNodePos(toNodeIndex, checkGroup);
                         this.drawLink(node.position, toNodePos, group, LINES.LineColours['purple']);
                     }
                 }
@@ -340,8 +387,9 @@ Tate.prototype.createLinks = function(group) {
                 //See if links are in group
                 for(j=0; j<node.linksExhibited.length; ++j) {
                     toNodeIndex = node.linksExhibited[j];
-                    if(nodeInGroup(toNodeIndex, group)) {
-                        toNodePos = this.getNodePos(toNodeIndex);
+                    validNode = checkGroup ?  nodeInGroup(toNodeIndex, group) : true;
+                    if(validNode) {
+                        toNodePos = this.getNodePos(toNodeIndex, checkGroup);
                         this.drawLink(node.position, toNodePos, group, LINES.LineColours['lightBlue']);
                     }
                 }
@@ -587,6 +635,12 @@ Tate.prototype.hideInfoPanel = function() {
     $('#nodeInformation').hide();
 };
 
+Tate.prototype.showAllNodes = function() {
+    this.camera.position.set(0, 350, 830);
+    this.interactionState = INFO;
+    this.currentScene = this.mainScene;
+};
+
 Tate.prototype.getNumNodes = function(sceneNum) {
     return this.internalNodeGroups[sceneNum-1].children.length;
 };
@@ -606,6 +660,10 @@ $(document).ready(function() {
 
     $('#nodeInfoOK').on("click", function() {
         app.hideInfoPanel();
+    });
+
+    $('#showAll').on("click", function() {
+        app.showAllNodes();
     });
 
     app.run();
