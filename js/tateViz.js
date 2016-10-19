@@ -34,6 +34,10 @@ Tate.prototype.init = function(container) {
     this.camRotateTime = 1;
     this.currentLookAt = new THREE.Vector3();
 
+    //Media
+    this.videoPlayer = document.getElementById("videoPlayer");
+    this.videoPlayerSource = document.getElementById("videoPlayerSource");
+
     //GUI
     this.guiControls = null;
     this.gui = null;
@@ -405,9 +409,6 @@ Tate.prototype.createGUI = function() {
         this.Background = '#5c5f64';
         this.LabelWidth = 1.0;
         this.LabelHeight = 1.0;
-        this.Red = true;
-        this.Green = true;
-        this.Blue = true;
     };
 
     var gui = new dat.GUI();
@@ -427,23 +428,6 @@ Tate.prototype.createGUI = function() {
         _this.scaleLabels(value, HEIGHT);
     });
 
-    this.guiLinks = gui.addFolder("Links");
-    var red = this.guiLinks.add(this.guiControls, 'Red');
-    red.onChange(function(value) {
-        _this.linkChange(value, RED);
-    });
-
-    var green = this.guiLinks.add(this.guiControls, 'Green');
-    green.onChange(function(value) {
-        _this.linkChange(value, GREEN);
-    });
-
-    var blue = this.guiLinks.add(this.guiControls, 'Blue');
-    blue.onChange(function(value) {
-        _this.linkChange(value, BLUE);
-    });
-
-    //this.guiData = gui.addFolder("Data");
     this.gui = gui;
 };
 
@@ -549,8 +533,7 @@ Tate.prototype.update = function() {
                     if(this.currentScene === undefined) {
                         console.log("No scene detected!");
                     }
-                    $('#groupType').html(this.parent.name + ' = ');
-                    $('#groupNumber').html(this.getNumNodes(this.currentScene));
+                    $('#groupType').html(this.parent.name);
                     $('#groupInfo').show();
                     this.interactionState = INFO;
                 } else {
@@ -565,8 +548,13 @@ Tate.prototype.update = function() {
             if(this.selectedObject) {
                 var record = this.getNodeData(this.selectedObject);
                 $('#nodeName').html(record["Node name"]);
-                $('#nodeDescription').html(record["Description"]);
+                $('#nodeDescription').html(record["Description"] !== "" ? record["Description"] : "No description available");
                 $('#nodeImage').attr("src", record["Image link"] !== "" ? record["Image link"] : "images/imgHolder.jpg");
+                if(record["Video link"] !== null) {
+                    this.videoPlayerSource.setAttribute("src", record["Video link"]);
+                    $('#nodeVideo').hide();
+                    $('#videoPlayer').show();
+                }
                 $('#nodeInformation').show();
                 this.selectedObject = null;
             }
@@ -592,6 +580,7 @@ Tate.prototype.goHome = function() {
     this.currentScene = 0;
     this.zoomAllowed = true;
     $("#nodeInformation").hide();
+    $('#groupInfo').hide();
     this.interactionState = ZOOM;
     this.resetCamera();
 };
@@ -636,6 +625,7 @@ Tate.prototype.hideInfoPanel = function() {
 };
 
 Tate.prototype.showAllNodes = function() {
+    $('#groupInfo').hide();
     this.camera.position.set(0, 350, 830);
     this.interactionState = INFO;
     this.currentScene = this.mainScene;

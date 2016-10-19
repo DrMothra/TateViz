@@ -61,7 +61,7 @@
 </div>
 
 <div id="groupInfo" class="infoPanel noDisplay">
-    <span id="groupType"> = </span><span id="groupNumber"></span>
+    <span id="groupType"></span>
 </div>
 
 <div id="nodeInformation" class="infoPanel noDisplay">
@@ -73,7 +73,13 @@
     </div>
     <div class="infoMedia">
         <img id="nodeImage" src="images/imgHolder.jpg">
-        <img src="images/videoHolder.jpg">
+        <img id="nodeVideo" src="images/videoHolder.jpg">
+        <video id="videoPlayer" controls class="noDisplay">
+            <source id="videoPlayerSource" src="">
+        </video>
+        <iframe id="videoPlayerFrame" class="noDisplay"
+            src="https://www.youtube.com/embed/yhXyAbOYXQU">
+        </iframe>
     </div>
     <div>
         <button id="nodeInfoOK" type="button">OK</button>
