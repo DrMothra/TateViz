@@ -45,6 +45,7 @@ Tate.prototype.init = function(container) {
 
 Tate.prototype.createScene = function() {
     //Create scene
+    var _this = this;
     BaseApp.prototype.createScene.call(this);
 
     //Camera offsets

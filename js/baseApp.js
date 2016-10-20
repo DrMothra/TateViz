@@ -157,7 +157,7 @@ BaseApp.prototype.createScene = function() {
 
 
     var pointLight = new THREE.PointLight(0xffffff);
-    pointLight.position.set(0,100,0);
+    pointLight.position.set(0,50,-50);
     pointLight.name = 'PointLight';
     scene.add(pointLight);
 
