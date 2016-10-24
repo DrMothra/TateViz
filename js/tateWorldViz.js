@@ -5,6 +5,7 @@
 var X_AXIS=0, Y_AXIS=1, Z_AXIS=2;
 var UP=0, LEFT=1, RIGHT=2, DOWN=3, HOME=4;
 var MOVE_INC = 5;
+var STOP=0;
 
 //Init this app from base
 function Tate() {
@@ -200,39 +201,44 @@ Tate.prototype.onScaleChange = function(value) {
 
 Tate.prototype.moveCamera = function(direction) {
     //Move camera according to user input
+    direction = direction.substr(4);
     switch(direction) {
-        case UP:
+        case "Up":
             this.camera.position.z -= MOVE_INC;
             this.currentLookAt = this.controls.getLookAt();
             this.currentLookAt.z -= MOVE_INC;
             this.controls.setLookAt(this.currentLookAt);
             break;
 
-        case DOWN:
+        case "Down":
             this.camera.position.z += MOVE_INC;
             this.currentLookAt = this.controls.getLookAt();
             this.currentLookAt.z += MOVE_INC;
             this.controls.setLookAt(this.currentLookAt);
             break;
 
-        case RIGHT:
+        case "Right":
             this.camera.position.x += MOVE_INC;
             this.currentLookAt = this.controls.getLookAt();
             this.currentLookAt.x += MOVE_INC;
             this.controls.setLookAt(this.currentLookAt);
             break;
 
-        case LEFT:
+        case "Left":
             this.camera.position.x -= MOVE_INC;
             this.currentLookAt = this.controls.getLookAt();
             this.currentLookAt.x -= MOVE_INC;
             this.controls.setLookAt(this.currentLookAt);
             break;
 
-        case HOME:
+        case "Home":
             this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
             this.currentLookAt.set(0,0,0);
             this.controls.setLookAt(this.currentLookAt);
+            break;
+
+        case "Stop":
+            clearInterval(this.keyRepeatTimer);
             break;
 
         default:
@@ -249,24 +255,12 @@ $(document).ready(function() {
     app.createGUI();
 
     //GUI callbacks
-    $('#moveUp').on("click", function() {
-        app.moveCamera(UP);
+    $("[id^=move]").on("mousedown", function() {
+        app.moveCamera(this.id);
     });
 
-    $('#moveDown').on("click", function() {
-        app.moveCamera(DOWN);
-    });
-
-    $('#moveLeft').on("click", function() {
-        app.moveCamera(LEFT);
-    });
-
-    $('#moveRight').on("click", function() {
-        app.moveCamera(RIGHT);
-    });
-
-    $('#home').on("click", function() {
-        app.moveCamera(HOME);
+    $("[id^=move]").on("mouseup", function() {
+        app.moveCamera("moveStop");
     });
 
     app.run();
