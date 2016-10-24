@@ -77,3 +77,14 @@
 .infoMedia img {
     width: 30%;
 }
+#zoom {
+    right: 1%;
+    bottom: 1%;
+    width: 3.5%;
+}
+#zoom button {
+    width: 70%;
+}
+#zoom img {
+    width: 70%;
+}

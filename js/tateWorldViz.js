@@ -17,6 +17,13 @@ Tate.prototype = new BaseApp();
 Tate.prototype.init = function(container) {
     BaseApp.prototype.init.call(this, container);
 
+    //Key repeats
+    this.keyRepeatTimer = undefined;
+    this.checkTime = 50;
+    this.x_movement = 0;
+    this.y_movement = 0;
+    this.z_movement = 0;
+
     //GUI
     this.guiControls = null;
     this.gui = null;
@@ -30,6 +37,7 @@ Tate.prototype.createScene = function() {
     //Camera
     this.defaultCamPosY = 400;
     this.defaultCamPosZ = 400;
+    this.currentLookAt = new THREE.Vector3();
     this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
 
     //Model loading
@@ -202,36 +210,53 @@ Tate.prototype.onScaleChange = function(value) {
 Tate.prototype.moveCamera = function(direction) {
     //Move camera according to user input
     direction = direction.substr(4);
+    var repeating = false;
+    var _this = this;
     switch(direction) {
         case "Up":
-            this.camera.position.z -= MOVE_INC;
-            this.currentLookAt = this.controls.getLookAt();
-            this.currentLookAt.z -= MOVE_INC;
-            this.controls.setLookAt(this.currentLookAt);
+            this.x_movement = 0;
+            this.y_movement = 0;
+            this.z_movement = -MOVE_INC;
+            repeating = true;
             break;
 
         case "Down":
-            this.camera.position.z += MOVE_INC;
-            this.currentLookAt = this.controls.getLookAt();
-            this.currentLookAt.z += MOVE_INC;
-            this.controls.setLookAt(this.currentLookAt);
+            this.x_movement = 0;
+            this.y_movement = 0;
+            this.z_movement = MOVE_INC;
+            repeating = true;
             break;
 
         case "Right":
-            this.camera.position.x += MOVE_INC;
-            this.currentLookAt = this.controls.getLookAt();
-            this.currentLookAt.x += MOVE_INC;
-            this.controls.setLookAt(this.currentLookAt);
+            this.x_movement = MOVE_INC;
+            this.y_movement = 0;
+            this.z_movement = 0;
+            repeating = true;
             break;
 
         case "Left":
-            this.camera.position.x -= MOVE_INC;
-            this.currentLookAt = this.controls.getLookAt();
-            this.currentLookAt.x -= MOVE_INC;
-            this.controls.setLookAt(this.currentLookAt);
+            this.x_movement = -MOVE_INC;
+            this.y_movement = 0;
+            this.z_movement = 0;
+            repeating = true;
+            break;
+
+        case "ZoomIn":
+            this.x_movement = 0;
+            this.y_movement = -MOVE_INC;
+            this.z_movement = -MOVE_INC;
+            repeating = true;
+            break;
+
+        case "ZoomOut":
+            this.x_movement = 0;
+            this.y_movement = MOVE_INC;
+            this.z_movement = MOVE_INC;
+            repeating = true;
             break;
 
         case "Home":
+            repeating = false;
             this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
             this.currentLookAt.set(0,0,0);
             this.controls.setLookAt(this.currentLookAt);
@@ -243,6 +268,17 @@ Tate.prototype.moveCamera = function(direction) {
 
         default:
             break;
+    }
+    if(repeating) {
+        this.keyRepeatTimer = setInterval(function() {
+            _this.camera.position.x += _this.x_movement;
+            _this.camera.position.y += _this.y_movement;
+            _this.camera.position.z += _this.z_movement;
+            _this.currentLookAt.x += _this.x_movement;
+            _this.currentLookAt.y += _this.y_movement;
+            _this.currentLookAt.z += _this.z_movement;
+            _this.controls.setLookAt(_this.currentLookAt);
+        }, this.checkTime);
     }
 };
 
