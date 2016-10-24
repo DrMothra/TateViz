@@ -16,7 +16,7 @@
     <script type="text/javascript" src="js/shapes.js?v=0.1"></script>
     <script type="text/javascript" src="js/lines.js?v=0.1"></script>
     <script type="text/javascript" src="js/baseApp.js?v=0.3"></script>
-    <script type="text/javascript" src="js/tateViz.js?v=0.2"></script>
+    <script type="text/javascript" src="js/tateWorldViz.js?v=0.1"></script>
 
     <link rel="stylesheet" href="css/bootstrap.min.css?v=0.1">
     <link rel="stylesheet" href="css/bootstrap-theme.min.css?v=0.1">
@@ -49,19 +49,19 @@
 </div>
 
 <div id="navigation" class="infoPanel">
-    <div>
-        <button type="button"><</button> <button id="home" type="button">Home</button> <button type="button">></button>
+    <div class="centred">
+        <div>
+            <button id="moveUp" type="button"><img src="images/arrowUp.png"></button>
+        </div>
+        <div>
+            <button id="moveLeft" type="button"><img src="images/arrowLeft.png"></button>
+            <button id="home" type="button"><img src="images/home.png"></button>
+            <button id="moveRight" type="button"><img src="images/arrowRight.png"></button>
+        </div>
+        <div>
+            <button id="moveDown" type="button"><img src="images/arrowDown.png"></button>
+        </div>
     </div>
-</div>
-
-<div id="showNodes" class="infoPanel">
-    <div>
-        <button id="showAll" type="button">Show All</button>
-    </div>
-</div>
-
-<div id="groupInfo" class="infoPanel noDisplay">
-    <span id="groupType"></span>
 </div>
 
 <div id="nodeInformation" class="infoPanel noDisplay">

@@ -3,6 +3,8 @@
  */
 
 var X_AXIS=0, Y_AXIS=1, Z_AXIS=2;
+var UP=0, LEFT=1, RIGHT=2, DOWN=3, HOME=4;
+var MOVE_INC = 5;
 
 //Init this app from base
 function Tate() {
@@ -25,8 +27,9 @@ Tate.prototype.createScene = function() {
     BaseApp.prototype.createScene.call(this);
 
     //Camera
-    var camPos = 1000;
-    this.camera.position.set(0, camPos, camPos);
+    this.defaultCamPosY = 400;
+    this.defaultCamPosZ = 400;
+    this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
 
     //Model loading
     this.xMax = 1000;
@@ -49,22 +52,24 @@ Tate.prototype.createScene = function() {
     var sphereGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
     var sphereMat = new THREE.MeshLambertMaterial( {color: 0xffff00} );
     var mainGroup = new THREE.Object3D();
-    var pos = new THREE.Vector3(), ground = new THREE.Vector3();
-    var mesh;
-    //var numNodes = tateData.length;
-    var numNodes = 2;
+    this.lineGroup = new THREE.Object3D();
+    var pos = new THREE.Vector3(), ground, mesh;
+    this.pinNodes = [];
+    var numNodes = tateData.length;
+    //var numNodes = 2;
     for(i=0; i<numNodes; ++i) {
         pos = this.getNodePosition(tateData[i]["Location coordinates"], tateData[i]["Start"]);
         if(pos !== undefined) {
             mesh = new THREE.Mesh(sphereGeom, sphereMat);
             mesh.position.copy(pos);
-            ground.copy(pos);
-            ground.y = 0;
-            this.drawLink(pos, ground, mainGroup, LINES.LineColours['yellow']);
+            this.pinNodes.push(mesh);
+            ground = new THREE.Vector3(pos.x, 0, pos.z);
+            this.drawLink(pos, ground, this.lineGroup, LINES.LineColours['yellow']);
             mainGroup.add(mesh);
         }
     }
     this.scenes[this.currentScene].add(mainGroup);
+    this.scenes[this.currentScene].add(this.lineGroup);
 };
 
 Tate.prototype.getNodePosition = function(location, date) {
@@ -117,6 +122,7 @@ Tate.prototype.createGUI = function() {
         this.LightX = 0;
         this.LightY = 50;
         this.LightZ = -600;
+        this.ScaleFactor = 1;
     };
 
     var gui = new dat.GUI();
@@ -143,6 +149,10 @@ Tate.prototype.createGUI = function() {
         _this.onLightChange(Z_AXIS, value);
     });
 
+    var scale = gui.add(this.guiControls, 'ScaleFactor', 1, 30).step(1);
+    scale.onChange(function(value) {
+        _this.onScaleChange(value);
+    });
     this.gui = gui;
 };
 
@@ -179,6 +189,57 @@ Tate.prototype.onLightChange = function(axis, pos) {
     }
 };
 
+Tate.prototype.onScaleChange = function(value) {
+    //Change pin height
+    var currentScale = this.lineGroup.scale.y;
+    this.lineGroup.scale.y = value;
+    for(var i=0; i<this.pinNodes.length; ++i) {
+        this.pinNodes[i].position.y = (this.pinNodes[i].position.y/currentScale) * value;
+    }
+};
+
+Tate.prototype.moveCamera = function(direction) {
+    //Move camera according to user input
+    switch(direction) {
+        case UP:
+            this.camera.position.z -= MOVE_INC;
+            this.currentLookAt = this.controls.getLookAt();
+            this.currentLookAt.z -= MOVE_INC;
+            this.controls.setLookAt(this.currentLookAt);
+            break;
+
+        case DOWN:
+            this.camera.position.z += MOVE_INC;
+            this.currentLookAt = this.controls.getLookAt();
+            this.currentLookAt.z += MOVE_INC;
+            this.controls.setLookAt(this.currentLookAt);
+            break;
+
+        case RIGHT:
+            this.camera.position.x += MOVE_INC;
+            this.currentLookAt = this.controls.getLookAt();
+            this.currentLookAt.x += MOVE_INC;
+            this.controls.setLookAt(this.currentLookAt);
+            break;
+
+        case LEFT:
+            this.camera.position.x -= MOVE_INC;
+            this.currentLookAt = this.controls.getLookAt();
+            this.currentLookAt.x -= MOVE_INC;
+            this.controls.setLookAt(this.currentLookAt);
+            break;
+
+        case HOME:
+            this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
+            this.currentLookAt.set(0,0,0);
+            this.controls.setLookAt(this.currentLookAt);
+            break;
+
+        default:
+            break;
+    }
+};
+
 $(document).ready(function() {
     //Initialise app
     var container = document.getElementById("WebGL-output");
@@ -188,6 +249,25 @@ $(document).ready(function() {
     app.createGUI();
 
     //GUI callbacks
+    $('#moveUp').on("click", function() {
+        app.moveCamera(UP);
+    });
+
+    $('#moveDown').on("click", function() {
+        app.moveCamera(DOWN);
+    });
+
+    $('#moveLeft').on("click", function() {
+        app.moveCamera(LEFT);
+    });
+
+    $('#moveRight').on("click", function() {
+        app.moveCamera(RIGHT);
+    });
+
+    $('#home').on("click", function() {
+        app.moveCamera(HOME);
+    });
 
     app.run();
 });
