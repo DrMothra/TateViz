@@ -74,20 +74,25 @@ Tate.prototype.createScene = function() {
     var numGroups = nodeGroupTypes.length;
     var group;
     var mainNodeGroups = [];
+    var lineNodeGroups = [];
     for(i=0; i<numGroups; ++i) {
         group = new THREE.Object3D();
         group.name = nodeGroupTypes[i];
         mainNodeGroups.push(group);
         this.scenes[this.currentScene].add(group);
+        group = new THREE.Object3D();
+        group.name = nodeGroupTypes[i]+"Line";
+        lineNodeGroups.push(group);
+        this.scenes[this.currentScene].add(group);
     }
+    this.nodeGroupTypes = nodeGroupTypes;
+    this.lineNodeGroups = lineNodeGroups;
 
     //Get data
     var labelScale = new THREE.Vector3(80, 60, 1);
     var i, j, nodeRadius = 5, nodeSegments = 24;
     var sphereGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
     var sphereMat = new THREE.MeshLambertMaterial( {color: 0xffff00} );
-    var mainGroup = new THREE.Object3D();
-    this.lineGroup = new THREE.Object3D();
     var pos = new THREE.Vector3(), ground, mesh;
     this.pinNodes = [];
     var label, limit = 20, type, colour;
@@ -101,20 +106,22 @@ Tate.prototype.createScene = function() {
                 console.log("Invalid type");
                 continue;
             }
+            for(j=0; j<numGroups; ++j) {
+                if(type === nodeGroupTypes[j]) break;
+            }
             colour = this.getNodeColour(type);
             label = spriteManager.create(tateData[i]["Node name"], limit, colour, pos, labelScale, 32, 1, true, false);
             //mesh = new THREE.Mesh(sphereGeom, sphereMat);
             //mesh.position.copy(pos);
             this.pinNodes.push(label);
             ground = new THREE.Vector3(pos.x, 0, pos.z);
-            this.drawLink(pos, ground, this.lineGroup, colour);
-            mainGroup.add(label);
+            this.drawLink(pos, ground, lineNodeGroups[j], colour);
+            mainNodeGroups[j].add(label);
         } else {
-            console.log("No location for ", i);
+            //console.log("No location for ", i);
         }
     }
-    this.scenes[this.currentScene].add(mainGroup);
-    this.scenes[this.currentScene].add(this.lineGroup);
+    this.mainNodeGroups = mainNodeGroups;
 };
 
 Tate.prototype.getNodePosition = function(location, date) {
@@ -229,6 +236,10 @@ Tate.prototype.createGUI = function() {
         this.LightY = 50;
         this.LightZ = -600;
         this.ScaleFactor = 1;
+        for(var i=0; i<_this.nodeGroupTypes.length; ++i) {
+            this[_this.nodeGroupTypes[i]] = true;
+        }
+        this.ShowAll = true;
     };
 
     var gui = new dat.GUI();
@@ -260,6 +271,19 @@ Tate.prototype.createGUI = function() {
     scale.onChange(function(value) {
         _this.onScaleChange(value);
     });
+
+    this.guiGroups = gui.addFolder("Groups");
+    for(var i=0; i<this.nodeGroupTypes.length; ++i) {
+        (function(item) {
+            _this.guiGroups.add(_this.guiControls, _this.nodeGroupTypes[item]).onChange(function(value) {
+                _this.showGroups(_this.nodeGroupTypes[item], value);
+            });
+        })(i);
+    }
+    this.guiGroups.add(this.guiControls, "ShowAll").onChange(function(value) {
+        _this.showGroups("ShowAll", value);
+    });
+
     this.gui = gui;
 };
 
@@ -298,10 +322,43 @@ Tate.prototype.onLightChange = function(axis, pos) {
 
 Tate.prototype.onScaleChange = function(value) {
     //Change pin height
-    var currentScale = this.lineGroup.scale.y;
-    this.lineGroup.scale.y = value;
-    for(var i=0; i<this.pinNodes.length; ++i) {
+    var i;
+    var currentScale = this.lineNodeGroups[0].scale.y;
+    for(i=0; i<this.lineNodeGroups.length; ++i) {
+        this.lineNodeGroups[i].scale.y = value;
+    }
+
+    for(i=0; i<this.pinNodes.length; ++i) {
         this.pinNodes[i].position.y = (this.pinNodes[i].position.y/currentScale) * value;
+    }
+};
+
+Tate.prototype.showGroups = function(groupName, value) {
+    //Show/hide groups
+    var nodeGroup = this.scenes[this.currentScene].getObjectByName(groupName);
+    if(!nodeGroup) {
+        console.log("Invalid group");
+        return;
+    }
+
+    var lineGroup = this.scenes[this.currentScene].getObjectByName(groupName+"Line");
+    if(!lineGroup) {
+        console.log("Invalid group");
+        return;
+    }
+
+    var child, i;
+    for(i=0; i<nodeGroup.children.length; ++i) {
+        child = nodeGroup.children[i];
+        if(child instanceof THREE.Sprite) {
+            child.visible = value;
+        }
+    }
+    for(i=0; i<lineGroup.children.length; ++i) {
+        child = lineGroup.children[i];
+        if(child instanceof THREE.Line) {
+            child.visible = value;
+        }
     }
 };
 
