@@ -110,7 +110,7 @@ BaseApp.prototype.mouseClicked = function(event) {
         //Ignore sprites
         for(var i=0; i<intersects.length; ++i) {
             if(intersects[i].object.type === "Mesh") {
-                console.log("Picked ", intersects[i]);
+                //console.log("Picked ", intersects[i]);
                 this.selectedObject = intersects[i].object;
                 return;
             }

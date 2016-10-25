@@ -56,25 +56,61 @@ Tate.prototype.createScene = function() {
         _this.scenes[_this.currentScene].add(mesh);
     });
 
+    //Groups
+    var nodeGroupTypes = [
+        "Artists",
+        "Researchers/Thinkers",
+        "Curators",
+        "Instigators",
+        "Performances",
+        "Interventions",
+        "Exhibitions",
+        "Initiatives",
+        "Other artwork",
+        "Institutions - Art",
+        "Institutions - Other",
+        "Public"
+    ];
+    var numGroups = nodeGroupTypes.length;
+    var group;
+    var mainNodeGroups = [];
+    for(i=0; i<numGroups; ++i) {
+        group = new THREE.Object3D();
+        group.name = nodeGroupTypes[i];
+        mainNodeGroups.push(group);
+        this.scenes[this.currentScene].add(group);
+    }
+
     //Get data
-    var i, nodeRadius = 5, nodeSegments = 24;
+    var labelScale = new THREE.Vector3(80, 60, 1);
+    var i, j, nodeRadius = 5, nodeSegments = 24;
     var sphereGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
     var sphereMat = new THREE.MeshLambertMaterial( {color: 0xffff00} );
     var mainGroup = new THREE.Object3D();
     this.lineGroup = new THREE.Object3D();
     var pos = new THREE.Vector3(), ground, mesh;
     this.pinNodes = [];
+    var label, limit = 20, type, colour;
     var numNodes = tateData.length;
-    //var numNodes = 2;
+    //var numNodes = 20;
     for(i=0; i<numNodes; ++i) {
         pos = this.getNodePosition(tateData[i]["Location coordinates"], tateData[i]["Start"]);
         if(pos !== undefined) {
-            mesh = new THREE.Mesh(sphereGeom, sphereMat);
-            mesh.position.copy(pos);
-            this.pinNodes.push(mesh);
+            type = tateData[i]["Type of node"];
+            if(type === "" || type === undefined) {
+                console.log("Invalid type");
+                continue;
+            }
+            colour = this.getNodeColour(type);
+            label = spriteManager.create(tateData[i]["Node name"], limit, colour, pos, labelScale, 32, 1, true, false);
+            //mesh = new THREE.Mesh(sphereGeom, sphereMat);
+            //mesh.position.copy(pos);
+            this.pinNodes.push(label);
             ground = new THREE.Vector3(pos.x, 0, pos.z);
-            this.drawLink(pos, ground, this.lineGroup, LINES.LineColours['yellow']);
-            mainGroup.add(mesh);
+            this.drawLink(pos, ground, this.lineGroup, colour);
+            mainGroup.add(label);
+        } else {
+            console.log("No location for ", i);
         }
     }
     this.scenes[this.currentScene].add(mainGroup);
@@ -121,6 +157,67 @@ Tate.prototype.drawLink = function(from, to, group, lineColour) {
     group.add(link);
 };
 
+Tate.prototype.getNodeColour = function(type) {
+    //Get colour for specific node
+    var colour = undefined;
+    switch(type) {
+        case "Artists":
+            colour = LINES.LineColours["red"];
+            break;
+
+        case "Researchers/Thinkers":
+            colour = LINES.LineColours["redOrange"];
+            break;
+
+        case "Curators":
+            colour = LINES.LineColours["orange"];
+            break;
+
+        case "Instigators":
+            colour = LINES.LineColours["yellowOrange"];
+            break;
+
+        case "Performances":
+            colour = LINES.LineColours["yellow"];
+            break;
+
+        case "Interventions":
+            colour = LINES.LineColours["yellowGreen"];
+            break;
+
+        case "Exhibitions":
+            colour = LINES.LineColours["green"];
+            break;
+
+        case "Initiatives":
+            colour = LINES.LineColours["blueGreen"];
+            break;
+
+        case "Other artwork":
+            colour = LINES.LineColours["blue"];
+            break;
+
+        case "Institutions - Art":
+            colour = LINES.LineColours["blueViolet"];
+            break;
+
+        case "Institutions - Other":
+            colour = LINES.LineColours["violet"];
+            break;
+
+        case "Public":
+            colour = LINES.LineColours["redViolet"];
+            break;
+
+        default:
+            //DEBUG
+            console.log("No colour for type ", type);
+            break;
+    }
+
+    return colour;
+};
+
 Tate.prototype.createGUI = function() {
     //GUI - using dat.GUI
     var _this = this;
@@ -142,18 +239,19 @@ Tate.prototype.createGUI = function() {
         _this.renderer.setClearColor(value, 1.0);
     });
 
+    this.guiLight = gui.addFolder("Lights");
     //Light pos
-    var lightX = gui.add(this.guiControls, 'LightX', -1000, 1000).step(10);
+    var lightX = this.guiLight.add(this.guiControls, 'LightX', -1000, 1000).step(10);
     lightX.onChange(function(value) {
         _this.onLightChange(X_AXIS, value);
     });
 
-    var lightY = gui.add(this.guiControls, 'LightY', 0, 400).step(10);
+    var lightY = this.guiLight.add(this.guiControls, 'LightY', 0, 400).step(10);
     lightY.onChange(function(value) {
         _this.onLightChange(Y_AXIS, value);
     });
 
-    var lightZ = gui.add(this.guiControls, 'LightZ', -1000, 200).step(10);
+    var lightZ = this.guiLight.add(this.guiControls, 'LightZ', -1000, 200).step(10);
     lightZ.onChange(function(value) {
         _this.onLightChange(Z_AXIS, value);
     });
@@ -257,6 +355,7 @@ Tate.prototype.moveCamera = function(direction) {
 
         case "Home":
             repeating = false;
+            clearInterval(this.keyRepeatTimer);
             this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
             this.currentLookAt.set(0,0,0);
             this.controls.setLookAt(this.currentLookAt);

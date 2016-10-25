@@ -7,13 +7,17 @@ var LINES = (function() {
 
     var lineMats = {
         "red": new THREE.LineBasicMaterial({color: 0xff0000}),
-        "green": new THREE.LineBasicMaterial({color: 0x00ff00}),
-        "darkBlue": new THREE.LineBasicMaterial({color: 0x1d26bb}),
-        "lightBlue": new THREE.LineBasicMaterial({color: 0x6aa8de}),
-        "orange": new THREE.LineBasicMaterial({color: 0xf05d0e}),
-        "yellow": new THREE.LineBasicMaterial({color: 0xe1d413}),
-        "purple": new THREE.LineBasicMaterial({color: 0x5e17de}),
-        "brown": new THREE.LineBasicMaterial({color: 0x894414})
+        "redOrange": new THREE.LineBasicMaterial({color: 0xfd5308}),
+        "orange": new THREE.LineBasicMaterial({color: 0xfbe8ca}),
+        "yellowOrange": new THREE.LineBasicMaterial({color: 0x533e01}),
+        "yellow": new THREE.LineBasicMaterial({color: 0xffff00}),
+        "yellowGreen": new THREE.LineBasicMaterial({color: 0xbcd902}),
+        "green": new THREE.LineBasicMaterial({color: 0x4ab002}),
+        "blueGreen": new THREE.LineBasicMaterial({color: 0x012839}),
+        "blue": new THREE.LineBasicMaterial({color: 0x0000ff}),
+        "blueViolet": new THREE.LineBasicMaterial({color: 0x3d01a4}),
+        "violet": new THREE.LineBasicMaterial({color: 0x8601af}),
+        "redViolet": new THREE.LineBasicMaterial({color: 0xca0045})
     };
 
     return {

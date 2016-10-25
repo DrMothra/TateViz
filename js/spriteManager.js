@@ -6,7 +6,7 @@
 var spriteManager = (function () {
     //Default values
     var defaultFontFace = "Arial";
-    var defaultBorderThickness = 5;
+    var defaultBorderThickness = 0;
     var backgroundColour = 'rgba(55, 55, 55, 1.0)';
     var borderColour = 'rgba(0, 0, 0, 1.0)';
     var textColour = 'rgba(255, 184, 57, 1.0)';
@@ -18,9 +18,21 @@ var spriteManager = (function () {
     var labelNames = [];
 
     return {
-        create: function(name, position, scale, fontSize, opacity, visible, rect) {
+        create: function(name, textLimit, colour, position, scale, fontSize, opacity, visible, rect) {
             //Create label
+            if(colour !== undefined) {
+                var red = colour.color.r * 255;
+                var green = colour.color.g * 255;
+                var blue = colour.color.b * 255;
+                textColour = 'rgba('+red+', '+green+', '+blue+', 1.0)';
+                //console.log(textColour);
+            }
             var canvas = document.createElement('canvas');
+            if(textLimit > 0) {
+                if(name.length > textLimit) {
+                    name = name.substr(0, textLimit);
+                }
+            }
             var spriteName = ' ' + name + ' ';
             canvas.width = 400;
 
@@ -45,8 +57,11 @@ var spriteManager = (function () {
             }
 
             //Text
+            if(colour !== null) {
+
+            }
             context.fillStyle = textColour;
-            context.fillText( spriteName, defaultBorderThickness + offset, fontSize + defaultBorderThickness);
+            context.fillText( spriteName, defaultBorderThickness + offset, fontSize+30 + defaultBorderThickness);
 
             // canvas contents will be used for a texture
             var texture = new THREE.Texture(canvas);
