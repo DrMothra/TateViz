@@ -89,13 +89,15 @@ Tate.prototype.createScene = function() {
     this.lineNodeGroups = lineNodeGroups;
 
     //Get data
+    this.minYear = 1966;
     var labelScale = new THREE.Vector3(80, 60, 1);
     var i, j, nodeRadius = 5, nodeSegments = 24;
     var sphereGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
     var sphereMat = new THREE.MeshLambertMaterial( {color: 0xffff00} );
     var pos = new THREE.Vector3(), ground, mesh;
     this.pinNodes = [];
-    var label, limit = 20, type, colour;
+    this.lineNodes = [];
+    var label, line, limit = 20, type, colour;
     var numNodes = tateData.length;
     //var numNodes = 20;
     for(i=0; i<numNodes; ++i) {
@@ -115,7 +117,8 @@ Tate.prototype.createScene = function() {
             //mesh.position.copy(pos);
             this.pinNodes.push(label);
             ground = new THREE.Vector3(pos.x, 0, pos.z);
-            this.drawLink(pos, ground, lineNodeGroups[j], colour);
+            line = this.drawLink(pos, ground, lineNodeGroups[j], colour);
+            this.lineNodes.push(line);
             mainNodeGroups[j].add(label);
         } else {
             //console.log("No location for ", i);
@@ -153,7 +156,8 @@ Tate.prototype.getNodePosition = function(location, date) {
         console.log("Invalid date!");
         return undefined;
     }
-    date -= 1960;
+
+    date -= this.minYear;
     return new THREE.Vector3(long, date, -lat);
 };
 
@@ -162,6 +166,7 @@ Tate.prototype.drawLink = function(from, to, group, lineColour) {
     lineGeom.vertices.push(from, to);
     var link = new THREE.Line(lineGeom, lineColour);
     group.add(link);
+    return link;
 };
 
 Tate.prototype.getNodeColour = function(type) {
@@ -236,6 +241,7 @@ Tate.prototype.createGUI = function() {
         this.LightY = 50;
         this.LightZ = -600;
         this.ScaleFactor = 1;
+        this.Year = _this.minYear;
         for(var i=0; i<_this.nodeGroupTypes.length; ++i) {
             this[_this.nodeGroupTypes[i]] = true;
         }
@@ -272,12 +278,19 @@ Tate.prototype.createGUI = function() {
         _this.onScaleChange(value);
     });
 
+    var year = gui.add(this.guiControls, 'Year', this.minYear, 2016).step(1);
+    year.onChange(function(value) {
+        _this.onYearChange(value);
+    });
+
+    var group;
     this.guiGroups = gui.addFolder("Groups");
     for(var i=0; i<this.nodeGroupTypes.length; ++i) {
         (function(item) {
-            _this.guiGroups.add(_this.guiControls, _this.nodeGroupTypes[item]).onChange(function(value) {
+            group = _this.guiGroups.add(_this.guiControls, _this.nodeGroupTypes[item]).onChange(function(value) {
                 _this.showGroups(_this.nodeGroupTypes[item], value);
             });
+            group.listen();
         })(i);
     }
     this.guiGroups.add(this.guiControls, "ShowAll").onChange(function(value) {
@@ -333,8 +346,51 @@ Tate.prototype.onScaleChange = function(value) {
     }
 };
 
+Tate.prototype.onYearChange = function(value) {
+    //Display nodes after and including this year
+    var i, node;
+    var currentScale = this.lineNodeGroups[0].scale.y;
+    for(i=0; i<this.pinNodes.length; ++i) {
+        node = this.pinNodes[i];
+        if(!node.parent.visible) continue;
+        (node.position.y/currentScale) < (value - this.minYear) ? node.visible = false : node.visible = true;
+        this.lineNodes[i].visible = node.visible;
+    }
+};
+
 Tate.prototype.showGroups = function(groupName, value) {
     //Show/hide groups
+    var child, i, j, group;
+    if(groupName === "ShowAll") {
+        for(i=0; i<this.mainNodeGroups.length; ++i) {
+            group = this.mainNodeGroups[i];
+            group.visible = value;
+            for(j=0; j<group.children.length; ++j) {
+                child = group.children[j];
+                if(child instanceof THREE.Sprite) {
+                    child.visible = value;
+                }
+            }
+        }
+        for(i=0; i<this.lineNodeGroups.length; ++i) {
+            group = this.lineNodeGroups[i];
+            group.visible = value;
+            for(j=0; j<group.children.length; ++j) {
+                child = group.children[j];
+                if(child instanceof THREE.Line) {
+                    child.visible = value;
+                }
+            }
+        }
+
+        //Update interface
+        for(i=0; i<this.nodeGroupTypes.length; ++i) {
+            this.guiControls[this.nodeGroupTypes[i]] = value;
+        }
+
+        return;
+    }
+
     var nodeGroup = this.scenes[this.currentScene].getObjectByName(groupName);
     if(!nodeGroup) {
         console.log("Invalid group");
@@ -347,19 +403,21 @@ Tate.prototype.showGroups = function(groupName, value) {
         return;
     }
 
-    var child, i;
+    nodeGroup.visible = value;
     for(i=0; i<nodeGroup.children.length; ++i) {
         child = nodeGroup.children[i];
         if(child instanceof THREE.Sprite) {
             child.visible = value;
         }
     }
+    lineGroup.visible = value;
     for(i=0; i<lineGroup.children.length; ++i) {
         child = lineGroup.children[i];
         if(child instanceof THREE.Line) {
             child.visible = value;
         }
     }
+    this.onYearChange(this.guiControls.Year);
 };
 
 Tate.prototype.moveCamera = function(direction) {

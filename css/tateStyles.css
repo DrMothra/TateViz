@@ -88,3 +88,10 @@
 #zoom img {
     width: 70%;
 }
+#generalInfo {
+    top: 1%;
+    left: 1%;
+}
+#generalInfo img {
+    width: 50%;
+}

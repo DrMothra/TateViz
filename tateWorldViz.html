@@ -32,7 +32,7 @@
 
 </div>
 
-<div id="info" class="infoPanel noDisplay">
+<div id="nodeInfo" class="infoPanel noDisplay">
     <div>
         <span>Name : </span><span id="infoName">Artwork 1</span>
     </div>
@@ -71,6 +71,38 @@
         </div>
         <div>
             <button id="moveZoomOut" type="button"><img src="images/minus.png"></button>
+        </div>
+    </div>
+</div>
+
+<div id="generalInfo" class="infoPanel">
+    <div>
+        <img src="images/infoOrange.png" data-toggle="modal" data-target="#infoModal">
+    </div>
+</div>
+
+<div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Information</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Use the scale factor to scale the nodes on the map.
+                </p>
+                <p>
+                    The Year slider will show those nodes that were started on or after the year shown.
+                </p>
+                <p>
+                    The colour key for the groups is as shown below:-
+                    <img src="images/groupKey.png">
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
