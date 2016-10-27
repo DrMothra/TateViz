@@ -6,6 +6,7 @@ var X_AXIS=0, Y_AXIS=1, Z_AXIS=2;
 var UP=0, LEFT=1, RIGHT=2, DOWN=3, HOME=4;
 var MOVE_INC = 5;
 var STOP=0;
+var WIDTH = 0, HEIGHT = 1;
 
 //Init this app from base
 function Tate() {
@@ -34,6 +35,9 @@ Tate.prototype.createScene = function() {
     var _this = this;
     BaseApp.prototype.createScene.call(this);
 
+    this.rootGroup = new THREE.Object3D();
+    this.scenes[this.currentScene].add(this.rootGroup);
+
     //Camera
     this.defaultCamPosY = 400;
     this.defaultCamPosZ = 400;
@@ -54,7 +58,16 @@ Tate.prototype.createScene = function() {
         var bbox = new THREE.Box3().setFromObject(mesh);
 
         _this.scenes[_this.currentScene].add(mesh);
+        _this.worldMesh = mesh;
     });
+
+    //Map textures
+    var textureLoader = new THREE.TextureLoader();
+    this.currentMap = 0;
+    this.mapTextures = [];
+    this.mapTextures.push(textureLoader.load( "models/earth.jpg" ));
+    this.mapTextures.push(textureLoader.load( "models/worldMapLarge.png" ));
+    this.mapTextures.push(textureLoader.load( "models/worldMapOutline.jpg" ));
 
     //Groups
     var nodeGroupTypes = [
@@ -79,18 +92,21 @@ Tate.prototype.createScene = function() {
         group = new THREE.Object3D();
         group.name = nodeGroupTypes[i];
         mainNodeGroups.push(group);
-        this.scenes[this.currentScene].add(group);
+        this.rootGroup.add(group);
         group = new THREE.Object3D();
         group.name = nodeGroupTypes[i]+"Line";
         lineNodeGroups.push(group);
-        this.scenes[this.currentScene].add(group);
+        this.rootGroup.add(group);
     }
     this.nodeGroupTypes = nodeGroupTypes;
     this.lineNodeGroups = lineNodeGroups;
 
     //Get data
     this.minYear = 1966;
-    var labelScale = new THREE.Vector3(80, 60, 1);
+    this.maxYear = 2016;
+    this.labelXScale = 80;
+    this.labelYScale = 60;
+    var labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
     var i, j, nodeRadius = 5, nodeSegments = 24;
     var sphereGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
     var sphereMat = new THREE.MeshLambertMaterial( {color: 0xffff00} );
@@ -241,11 +257,21 @@ Tate.prototype.createGUI = function() {
         this.LightY = 50;
         this.LightZ = -600;
         this.ScaleFactor = 1;
-        this.Year = _this.minYear;
+        this.LabelWidth = _this.labelXScale;
+        this.LabelHeight = _this.labelYScale;
+        this.YearMax = _this.maxYear;
+        this.YearMin = _this.minYear;
         for(var i=0; i<_this.nodeGroupTypes.length; ++i) {
             this[_this.nodeGroupTypes[i]] = true;
         }
         this.ShowAll = true;
+        this.MapDetailed = true;
+        this.MapZones = false;
+        this.MapOutline = false;
+        this.MapX = 0;
+        this.MapZ = 0;
+        this.MapScaleX = 1;
+        this.MapScaleZ = 1;
     };
 
     var gui = new dat.GUI();
@@ -278,9 +304,24 @@ Tate.prototype.createGUI = function() {
         _this.onScaleChange(value);
     });
 
-    var year = gui.add(this.guiControls, 'Year', this.minYear, 2016).step(1);
-    year.onChange(function(value) {
-        _this.onYearChange(value);
+    var labelScale = gui.add(this.guiControls, 'LabelWidth', _this.labelXScale, _this.labelXScale+150).step(1);
+    labelScale.onChange(function(value) {
+        _this.onLabelScale(value, WIDTH);
+    });
+
+    labelScale = gui.add(this.guiControls, 'LabelHeight', _this.labelYScale, _this.labelYScale+150).step(1);
+    labelScale.onChange(function(value) {
+        _this.onLabelScale(value, HEIGHT);
+    });
+
+    var year = gui.add(this.guiControls, 'YearMax', this.minYear, this.maxYear).step(1);
+    year.onChange(function() {
+        _this.onYearChange();
+    });
+
+    year = gui.add(this.guiControls, 'YearMin', this.minYear, this.maxYear);
+    year.onChange(function() {
+        _this.onYearChange();
     });
 
     var group;
@@ -295,6 +336,30 @@ Tate.prototype.createGUI = function() {
     }
     this.guiGroups.add(this.guiControls, "ShowAll").onChange(function(value) {
         _this.showGroups("ShowAll", value);
+    });
+
+    //Maps
+    var range = 300;
+    this.guiMaps = gui.addFolder("Maps");
+    var pos = this.guiMaps.add(this.guiControls, "MapX", -range, range).step(5);
+    pos.onChange(function(value) {
+        _this.onMapPosChange(value, X_AXIS);
+    });
+
+    pos = this.guiMaps.add(this.guiControls, "MapZ", -range, range).step(5);
+    pos.onChange(function(value) {
+        _this.onMapPosChange(value, Z_AXIS);
+    });
+
+    range = 5;
+    scale = this.guiMaps.add(this.guiControls, "MapScaleX", 1, range).step(0.5);
+    scale.onChange(function(value) {
+        _this.onMapScaleChange(value, X_AXIS);
+    });
+
+    scale = this.guiMaps.add(this.guiControls, "MapScaleZ", 1, range).step(0.5);
+    scale.onChange(function(value) {
+        _this.onMapScaleChange(value, Z_AXIS);
     });
 
     this.gui = gui;
@@ -347,15 +412,73 @@ Tate.prototype.onScaleChange = function(value) {
 };
 
 Tate.prototype.onYearChange = function(value) {
-    //Display nodes after and including this year
-    var i, node;
+    //Display nodes between year ranges
+    var i, node, nodeYear, max, min;
     var currentScale = this.lineNodeGroups[0].scale.y;
     for(i=0; i<this.pinNodes.length; ++i) {
         node = this.pinNodes[i];
         if(!node.parent.visible) continue;
-        (node.position.y/currentScale) < (value - this.minYear) ? node.visible = false : node.visible = true;
+        nodeYear = (node.position.y/currentScale);
+        max = this.guiControls.YearMax - this.minYear;
+        min = this.guiControls.YearMin - this.minYear;
+        nodeYear <= max && nodeYear >= min ? node.visible = true : node.visible = false;
         this.lineNodes[i].visible = node.visible;
     }
+};
+
+Tate.prototype.onLabelScale = function(value, axis) {
+    var i, nodeLength = this.pinNodes.length;
+    switch(axis) {
+        case WIDTH:
+            for(i=0; i<nodeLength; ++i) {
+                this.pinNodes[i].scale.x = value;
+            }
+            break;
+
+        case HEIGHT:
+            for(i=0; i<nodeLength; ++i) {
+                this.pinNodes[i].scale.y = value;
+            }
+            break;
+
+        default:
+            break;
+    }
+};
+
+Tate.prototype.onMapPosChange = function(value, axis) {
+    switch(axis) {
+        case X_AXIS:
+            this.rootGroup.position.x = value;
+            break;
+
+        case Z_AXIS:
+            this.rootGroup.position.z = value;
+            break;
+
+        default:
+            break;
+    }
+};
+
+Tate.prototype.onMapScaleChange = function(value, axis) {
+    switch(axis) {
+        case X_AXIS:
+            this.rootGroup.scale.x = value;
+            break;
+
+        case Z_AXIS:
+            this.rootGroup.scale.z = value;
+            break;
+
+        default:
+            break;
+    }
+};
+
+Tate.prototype.onTextureChanged = function(value) {
+    this.worldMesh.material.map = this.mapTextures[value];
+    this.worldMesh.material.map.needsUpdate = true;
 };
 
 Tate.prototype.showGroups = function(groupName, value) {
@@ -417,7 +540,7 @@ Tate.prototype.showGroups = function(groupName, value) {
             child.visible = value;
         }
     }
-    this.onYearChange(this.guiControls.Year);
+    this.onYearChange();
 };
 
 Tate.prototype.moveCamera = function(direction) {
