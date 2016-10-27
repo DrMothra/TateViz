@@ -7,6 +7,7 @@ var UP=0, LEFT=1, RIGHT=2, DOWN=3, HOME=4;
 var MOVE_INC = 5;
 var STOP=0;
 var WIDTH = 0, HEIGHT = 1;
+var MAP_DETAILED = 0, MAP_ZONES = 1, MAP_OUTLINE = 2;
 
 //Init this app from base
 function Tate() {
@@ -341,6 +342,24 @@ Tate.prototype.createGUI = function() {
     //Maps
     var range = 300;
     this.guiMaps = gui.addFolder("Maps");
+    var mapTex = this.guiMaps.add(this.guiControls, "MapDetailed").listen();
+    mapTex.onChange(function(value) {
+        _this.onTextureChanged(value, MAP_DETAILED);
+        _this.guiControls.MapDetailed = true;
+    });
+
+    mapTex = this.guiMaps.add(this.guiControls, "MapZones").listen();
+    mapTex.onChange(function(value) {
+        _this.onTextureChanged(value, MAP_ZONES);
+        _this.guiControls.MapZones = true;
+    });
+
+    mapTex = this.guiMaps.add(this.guiControls, "MapOutline").listen();
+    mapTex.onChange(function(value) {
+        _this.onTextureChanged(value, MAP_OUTLINE);
+        _this.guiControls.MapOutline = true;
+    });
+
     var pos = this.guiMaps.add(this.guiControls, "MapX", -range, range).step(5);
     pos.onChange(function(value) {
         _this.onMapPosChange(value, X_AXIS);
@@ -352,12 +371,12 @@ Tate.prototype.createGUI = function() {
     });
 
     range = 5;
-    scale = this.guiMaps.add(this.guiControls, "MapScaleX", 1, range).step(0.5);
+    scale = this.guiMaps.add(this.guiControls, "MapScaleX", 0.1, range).step(0.1);
     scale.onChange(function(value) {
         _this.onMapScaleChange(value, X_AXIS);
     });
 
-    scale = this.guiMaps.add(this.guiControls, "MapScaleZ", 1, range).step(0.5);
+    scale = this.guiMaps.add(this.guiControls, "MapScaleZ", 0.1, range).step(0.1);
     scale.onChange(function(value) {
         _this.onMapScaleChange(value, Z_AXIS);
     });
@@ -476,9 +495,13 @@ Tate.prototype.onMapScaleChange = function(value, axis) {
     }
 };
 
-Tate.prototype.onTextureChanged = function(value) {
-    this.worldMesh.material.map = this.mapTextures[value];
-    this.worldMesh.material.map.needsUpdate = true;
+Tate.prototype.onTextureChanged = function(value, textureID) {
+    this.guiControls.MapDetailed = false;
+    this.guiControls.MapZones = false;
+    this.guiControls.MapOutline = false;
+
+    this.worldMesh.material.materials[0].map = this.mapTextures[textureID];
+    this.worldMesh.material.materials[0].map.needsUpdate = true;
 };
 
 Tate.prototype.showGroups = function(groupName, value) {
