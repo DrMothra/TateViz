@@ -47,7 +47,7 @@ Tate.prototype.createScene = function() {
     this.defaultCamPosZ = 400;
     this.currentLookAt = new THREE.Vector3();
     this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
-    this.zoomInc = 1/30;
+    this.zoomInc = 1/100;
 
     //Offsets
     var viewOffset = 200;
