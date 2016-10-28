@@ -53,10 +53,10 @@ Tate.prototype.createScene = function() {
     var viewOffset = 200;
     this.camOffsets = {};
     this.camOffsets.Home = new THREE.Vector3(0, viewOffset, 0);
-    this.camOffsets.Top = new THREE.Vector3(0, viewOffset, -viewOffset);
-    this.camOffsets.Right = new THREE.Vector3(viewOffset, viewOffset, 0);
-    this.camOffsets.Bottom = new THREE.Vector3(0, viewOffset, viewOffset);
-    this.camOffsets.Left = new THREE.Vector3(-viewOffset, viewOffset, 0);
+    this.camOffsets.Top = new THREE.Vector3(0, 0, -687);
+    this.camOffsets.Right = new THREE.Vector3(1280, 0, -150);
+    this.camOffsets.Bottom = new THREE.Vector3(0, 0, 560);
+    this.camOffsets.Left = new THREE.Vector3(-1280, 0, -150);
 
     //Model loading
     this.xMax = 1000;
@@ -685,9 +685,17 @@ Tate.prototype.moveCamera = function(direction) {
 
 Tate.prototype.camOffset = function(direction) {
     direction = direction.substr(3);
-    this.temp.copy(this.currentLookAt);
-    this.temp.add(this.camOffsets[direction]);
-    this.camera.position.copy(this.temp);
+    switch(direction) {
+        case "Home":
+            this.temp.copy(this.currentLookAt);
+            this.temp.add(this.camOffsets[direction]);
+            this.camera.position.copy(this.temp);
+            break;
+
+        default:
+            this.camera.position.copy(this.camOffsets[direction]);
+            break;
+    }
 };
 
 $(document).ready(function() {
