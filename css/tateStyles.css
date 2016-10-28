@@ -41,10 +41,10 @@
     width: 10%;
 }
 #navigation button {
-    padding: 0;
-    margin: 0;
-    width: 30%;
-}
+     padding: 0;
+     margin: 0;
+     width: 30%;
+ }
 #navigation img {
     width: 35%;
 }
@@ -78,8 +78,8 @@
     width: 30%;
 }
 #zoom {
-    right: 1%;
-    bottom: 1%;
+    left: 11%;
+    bottom: 2%;
     width: 3.5%;
 }
 #zoom button {
@@ -94,4 +94,17 @@
 }
 #generalInfo img {
     width: 50%;
+}
+#camera {
+    right: 1%;
+    bottom: 1%;
+    width: 12.5%;
+}
+#camera button {
+    padding: 0;
+    margin: 0;
+    width: 30%;
+}
+#camera img {
+    width: 35%;
 }

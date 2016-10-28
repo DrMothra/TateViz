@@ -29,6 +29,9 @@ Tate.prototype.init = function(container) {
     //GUI
     this.guiControls = null;
     this.gui = null;
+
+    //Temp vectors
+    this.temp = new THREE.Vector3();
 };
 
 Tate.prototype.createScene = function() {
@@ -44,12 +47,46 @@ Tate.prototype.createScene = function() {
     this.defaultCamPosZ = 400;
     this.currentLookAt = new THREE.Vector3();
     this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
+    this.zoomInc = 1/30;
+
+    //Offsets
+    var viewOffset = 200;
+    this.camOffsets = {};
+    this.camOffsets.Home = new THREE.Vector3(0, viewOffset, 0);
+    this.camOffsets.Top = new THREE.Vector3(0, viewOffset, -viewOffset);
+    this.camOffsets.Right = new THREE.Vector3(viewOffset, viewOffset, 0);
+    this.camOffsets.Bottom = new THREE.Vector3(0, viewOffset, viewOffset);
+    this.camOffsets.Left = new THREE.Vector3(-viewOffset, viewOffset, 0);
 
     //Model loading
     this.xMax = 1000;
     this.xMin = -1000;
     this.yMax = 500;
     this.yMin = -500;
+
+    //Map textures
+    var textureLoader = new THREE.TextureLoader();
+    this.currentMap = 0;
+    this.mapTextures = [];
+    this.mapTextures.push(textureLoader.load( "models/earth.jpg" ));
+    this.mapTextures.push(textureLoader.load( "models/worldMapLarge.png" ));
+    this.mapTextures.push(textureLoader.load( "models/worldMapOutline.jpg" ));
+    var mapInfo = [];
+    //MapX, MapZ, ScaleX, ScaleZ
+    var mapProperties = [0, 0, 1, 1,
+                        -50, 190, 1.1, 0.8,
+                        -50, 50, 0.9, 0.9];
+    var mapAdjust, index=0;
+    for(var map=0; map<this.mapTextures.length; ++map) {
+        mapAdjust = {};
+        mapAdjust.MapX = mapProperties[index++];
+        mapAdjust.MapZ = mapProperties[index++];
+        mapAdjust.MapScaleX = mapProperties[index++];
+        mapAdjust.MapScaleZ = mapProperties[index++];
+        mapInfo.push(mapAdjust);
+    }
+
+    this.mapInfo = mapInfo;
 
     this.loader = new THREE.JSONLoader();
 
@@ -61,14 +98,6 @@ Tate.prototype.createScene = function() {
         _this.scenes[_this.currentScene].add(mesh);
         _this.worldMesh = mesh;
     });
-
-    //Map textures
-    var textureLoader = new THREE.TextureLoader();
-    this.currentMap = 0;
-    this.mapTextures = [];
-    this.mapTextures.push(textureLoader.load( "models/earth.jpg" ));
-    this.mapTextures.push(textureLoader.load( "models/worldMapLarge.png" ));
-    this.mapTextures.push(textureLoader.load( "models/worldMapOutline.jpg" ));
 
     //Groups
     var nodeGroupTypes = [
@@ -502,6 +531,13 @@ Tate.prototype.onTextureChanged = function(value, textureID) {
 
     this.worldMesh.material.materials[0].map = this.mapTextures[textureID];
     this.worldMesh.material.materials[0].map.needsUpdate = true;
+
+    //Adjust map scale
+    var mapInfo = this.mapInfo[textureID];
+    this.rootGroup.position.x = mapInfo.MapX;
+    this.rootGroup.position.z = mapInfo.MapZ;
+    this.rootGroup.scale.x = mapInfo.MapScaleX;
+    this.rootGroup.scale.z = mapInfo.MapScaleZ;
 };
 
 Tate.prototype.showGroups = function(groupName, value) {
@@ -601,22 +637,27 @@ Tate.prototype.moveCamera = function(direction) {
             break;
 
         case "ZoomIn":
-            this.x_movement = 0;
-            this.y_movement = -MOVE_INC;
-            this.z_movement = -MOVE_INC;
+            this.temp.subVectors(this.camera.position, this.currentLookAt);
+            this.temp.multiplyScalar(-this.zoomInc);
+            this.x_movement = this.temp.x;
+            this.y_movement = this.temp.y;
+            this.z_movement = this.temp.z;
             repeating = true;
             break;
 
         case "ZoomOut":
-            this.x_movement = 0;
-            this.y_movement = MOVE_INC;
-            this.z_movement = MOVE_INC;
+            this.temp.subVectors(this.camera.position, this.currentLookAt);
+            this.temp.multiplyScalar(this.zoomInc);
+            this.x_movement = this.temp.x;
+            this.y_movement = this.temp.y;
+            this.z_movement = this.temp.z;
             repeating = true;
             break;
 
         case "Home":
             repeating = false;
             clearInterval(this.keyRepeatTimer);
+            this.controls.reset();
             this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
             this.currentLookAt.set(0,0,0);
             this.controls.setLookAt(this.currentLookAt);
@@ -642,6 +683,13 @@ Tate.prototype.moveCamera = function(direction) {
     }
 };
 
+Tate.prototype.camOffset = function(direction) {
+    direction = direction.substr(3);
+    this.temp.copy(this.currentLookAt);
+    this.temp.add(this.camOffsets[direction]);
+    this.camera.position.copy(this.temp);
+};
+
 $(document).ready(function() {
     //Initialise app
     var container = document.getElementById("WebGL-output");
@@ -657,6 +705,10 @@ $(document).ready(function() {
 
     $("[id^=move]").on("mouseup", function() {
         app.moveCamera("moveStop");
+    });
+
+    $("[id^=cam]").on("click", function() {
+        app.camOffset(this.id);
     });
 
     app.run();
