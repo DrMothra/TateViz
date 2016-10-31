@@ -54,7 +54,7 @@ Tate.prototype.createScene = function() {
     this.camOffsets = {};
     this.camOffsets.Home = new THREE.Vector3(0, viewOffset, 0);
     this.camOffsets.Top = new THREE.Vector3(0, 0, -687);
-    this.camOffsets.Right = new THREE.Vector3(1280, 0, -150);
+    this.camOffsets.Right = new THREE.Vector3(1050, 0, -128);
     this.camOffsets.Bottom = new THREE.Vector3(0, 0, 560);
     this.camOffsets.Left = new THREE.Vector3(-1280, 0, -150);
 
@@ -279,7 +279,7 @@ Tate.prototype.getNodeColour = function(type) {
 Tate.prototype.createGUI = function() {
     //GUI - using dat.GUI
     var _this = this;
-    this.guiControls = new function () {
+    var guiControls = function () {
         this.Background = '#5c5f64';
         this.LabelWidth = 1.0;
         this.LabelHeight = 1.0;
@@ -304,52 +304,53 @@ Tate.prototype.createGUI = function() {
         this.MapScaleZ = 1;
     };
 
+    var controls = new guiControls();
     var gui = new dat.GUI();
 
     //Add some folders
     this.guiAppear = gui.addFolder("Appearance");
-    this.guiAppear.addColor(this.guiControls, 'Background').onChange(function (value) {
+    this.guiAppear.addColor(controls, 'Background').onChange(function (value) {
         _this.renderer.setClearColor(value, 1.0);
     });
 
     this.guiLight = gui.addFolder("Lights");
     //Light pos
-    var lightX = this.guiLight.add(this.guiControls, 'LightX', -1000, 1000).step(10);
+    var lightX = this.guiLight.add(controls, 'LightX', -1000, 1000).step(10);
     lightX.onChange(function(value) {
         _this.onLightChange(X_AXIS, value);
     });
 
-    var lightY = this.guiLight.add(this.guiControls, 'LightY', 0, 400).step(10);
+    var lightY = this.guiLight.add(controls, 'LightY', 0, 400).step(10);
     lightY.onChange(function(value) {
         _this.onLightChange(Y_AXIS, value);
     });
 
-    var lightZ = this.guiLight.add(this.guiControls, 'LightZ', -1000, 200).step(10);
+    var lightZ = this.guiLight.add(controls, 'LightZ', -1000, 200).step(10);
     lightZ.onChange(function(value) {
         _this.onLightChange(Z_AXIS, value);
     });
 
-    var scale = gui.add(this.guiControls, 'ScaleFactor', 1, 30).step(1);
+    var scale = gui.add(controls, 'ScaleFactor', 1, 30).step(1);
     scale.onChange(function(value) {
         _this.onScaleChange(value);
     });
 
-    var labelScale = gui.add(this.guiControls, 'LabelWidth', _this.labelXScale, _this.labelXScale+150).step(1);
+    var labelScale = gui.add(controls, 'LabelWidth', _this.labelXScale, _this.labelXScale+150).step(1);
     labelScale.onChange(function(value) {
         _this.onLabelScale(value, WIDTH);
     });
 
-    labelScale = gui.add(this.guiControls, 'LabelHeight', _this.labelYScale, _this.labelYScale+150).step(1);
+    labelScale = gui.add(controls, 'LabelHeight', _this.labelYScale, _this.labelYScale+150).step(1);
     labelScale.onChange(function(value) {
         _this.onLabelScale(value, HEIGHT);
     });
 
-    var year = gui.add(this.guiControls, 'YearMax', this.minYear, this.maxYear).step(1);
+    var year = gui.add(controls, 'YearMax', this.minYear, this.maxYear).step(1);
     year.onChange(function() {
         _this.onYearChange();
     });
 
-    year = gui.add(this.guiControls, 'YearMin', this.minYear, this.maxYear);
+    year = gui.add(controls, 'YearMin', this.minYear, this.maxYear);
     year.onChange(function() {
         _this.onYearChange();
     });
@@ -358,54 +359,54 @@ Tate.prototype.createGUI = function() {
     this.guiGroups = gui.addFolder("Groups");
     for(var i=0; i<this.nodeGroupTypes.length; ++i) {
         (function(item) {
-            group = _this.guiGroups.add(_this.guiControls, _this.nodeGroupTypes[item]).onChange(function(value) {
+            group = _this.guiGroups.add(controls, _this.nodeGroupTypes[item]).onChange(function(value) {
                 _this.showGroups(_this.nodeGroupTypes[item], value);
             });
             group.listen();
         })(i);
     }
-    this.guiGroups.add(this.guiControls, "ShowAll").onChange(function(value) {
+    this.guiGroups.add(controls, "ShowAll").onChange(function(value) {
         _this.showGroups("ShowAll", value);
     });
 
     //Maps
     var range = 300;
     this.guiMaps = gui.addFolder("Maps");
-    var mapTex = this.guiMaps.add(this.guiControls, "MapDetailed").listen();
+    var mapTex = this.guiMaps.add(controls, "MapDetailed").listen();
     mapTex.onChange(function(value) {
         _this.onTextureChanged(value, MAP_DETAILED);
         _this.guiControls.MapDetailed = true;
     });
 
-    mapTex = this.guiMaps.add(this.guiControls, "MapZones").listen();
+    mapTex = this.guiMaps.add(controls, "MapZones").listen();
     mapTex.onChange(function(value) {
         _this.onTextureChanged(value, MAP_ZONES);
         _this.guiControls.MapZones = true;
     });
 
-    mapTex = this.guiMaps.add(this.guiControls, "MapOutline").listen();
+    mapTex = this.guiMaps.add(controls, "MapOutline").listen();
     mapTex.onChange(function(value) {
         _this.onTextureChanged(value, MAP_OUTLINE);
         _this.guiControls.MapOutline = true;
     });
 
-    var pos = this.guiMaps.add(this.guiControls, "MapX", -range, range).step(5);
+    var pos = this.guiMaps.add(controls, "MapX", -range, range).step(5);
     pos.onChange(function(value) {
         _this.onMapPosChange(value, X_AXIS);
     });
 
-    pos = this.guiMaps.add(this.guiControls, "MapZ", -range, range).step(5);
+    pos = this.guiMaps.add(controls, "MapZ", -range, range).step(5);
     pos.onChange(function(value) {
         _this.onMapPosChange(value, Z_AXIS);
     });
 
     range = 5;
-    scale = this.guiMaps.add(this.guiControls, "MapScaleX", 0.1, range).step(0.1);
+    scale = this.guiMaps.add(controls, "MapScaleX", 0.1, range).step(0.1);
     scale.onChange(function(value) {
         _this.onMapScaleChange(value, X_AXIS);
     });
 
-    scale = this.guiMaps.add(this.guiControls, "MapScaleZ", 0.1, range).step(0.1);
+    scale = this.guiMaps.add(controls, "MapScaleZ", 0.1, range).step(0.1);
     scale.onChange(function(value) {
         _this.onMapScaleChange(value, Z_AXIS);
     });
@@ -692,8 +693,14 @@ Tate.prototype.camOffset = function(direction) {
             this.camera.position.copy(this.temp);
             break;
 
-        default:
+        case "Top":
+        case "Right":
+        case "Left":
+        case "Bottom":
             this.camera.position.copy(this.camOffsets[direction]);
+            break;
+
+        default:
             break;
     }
 };
