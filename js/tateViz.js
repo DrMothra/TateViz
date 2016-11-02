@@ -277,7 +277,7 @@ function nodeInGroup(nodeIndex, group) {
     }
 
     return false;
-};
+}
 
 Tate.prototype.getNodePos = function(nodeIndex, internal) {
     //Search groups for this node and get pos

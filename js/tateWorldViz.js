@@ -43,8 +43,8 @@ Tate.prototype.createScene = function() {
     this.scenes[this.currentScene].add(this.rootGroup);
 
     //Camera
-    this.defaultCamPosY = 400;
-    this.defaultCamPosZ = 400;
+    this.defaultCamPosY = 950;
+    this.defaultCamPosZ = 950;
     this.currentLookAt = new THREE.Vector3();
     this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
     this.zoomInc = 1/100;
@@ -68,9 +68,9 @@ Tate.prototype.createScene = function() {
     var textureLoader = new THREE.TextureLoader();
     this.currentMap = 0;
     this.mapTextures = [];
-    this.mapTextures.push(textureLoader.load( "models/earth.jpg" ));
-    this.mapTextures.push(textureLoader.load( "models/worldMapLarge.png" ));
-    this.mapTextures.push(textureLoader.load( "models/worldMapOutline.jpg" ));
+    this.mapTextures.push(textureLoader.load( "models/dotted-world-map-light-grey.png" ));
+    this.mapTextures.push(textureLoader.load( "models/dotted-world-map-blue.png" ));
+    this.mapTextures.push(textureLoader.load( "models/dotted-world-map-purple.png" ));
     var mapInfo = [];
     //MapX, MapZ, ScaleX, ScaleZ
     var mapProperties = [0, 0, 1, 1,
@@ -91,6 +91,7 @@ Tate.prototype.createScene = function() {
     this.loader = new THREE.JSONLoader();
 
     this.loader.load('./models/worldBase.json', function (geometry, materials) {
+        materials[0].map = _this.mapTextures[0];
         var mesh = new THREE.Mesh(geometry, new THREE.MultiMaterial(materials));
         mesh.scale.set(50, 1, 50);
         var bbox = new THREE.Box3().setFromObject(mesh);
@@ -147,7 +148,7 @@ Tate.prototype.createScene = function() {
     var numNodes = tateData.length;
     //var numNodes = 20;
     for(i=0; i<numNodes; ++i) {
-        pos = this.getNodePosition(tateData[i]["Location coordinates"], tateData[i]["Start"]);
+        pos = this.getNodePosition(tateData[i]["Location coordinates"], tateData[i].Start);
         if(pos !== undefined) {
             type = tateData[i]["Type of node"];
             if(type === "" || type === undefined) {
@@ -217,10 +218,10 @@ Tate.prototype.drawLink = function(from, to, group, lineColour) {
 
 Tate.prototype.getNodeColour = function(type) {
     //Get colour for specific node
-    var colour = undefined;
+    var colour;
     switch(type) {
         case "Artists":
-            colour = LINES.LineColours["red"];
+            colour = LINES.LineColours.red;
             break;
 
         case "Researchers/Thinkers":
@@ -295,9 +296,9 @@ Tate.prototype.createGUI = function() {
             this[_this.nodeGroupTypes[i]] = true;
         }
         this.ShowAll = true;
-        this.MapDetailed = true;
-        this.MapZones = false;
-        this.MapOutline = false;
+        this.MapGrey = true;
+        this.MapBlue = false;
+        this.MapPurple = false;
         this.MapX = 0;
         this.MapZ = 0;
         this.MapScaleX = 1;
@@ -372,22 +373,22 @@ Tate.prototype.createGUI = function() {
     //Maps
     var range = 300;
     this.guiMaps = gui.addFolder("Maps");
-    var mapTex = this.guiMaps.add(controls, "MapDetailed").listen();
+    var mapTex = this.guiMaps.add(controls, "MapGrey").listen();
     mapTex.onChange(function(value) {
         _this.onTextureChanged(value, MAP_DETAILED);
-        _this.guiControls.MapDetailed = true;
+        _this.guiControls.MapGrey = true;
     });
 
-    mapTex = this.guiMaps.add(controls, "MapZones").listen();
+    mapTex = this.guiMaps.add(controls, "MapBlue").listen();
     mapTex.onChange(function(value) {
         _this.onTextureChanged(value, MAP_ZONES);
-        _this.guiControls.MapZones = true;
+        _this.guiControls.MapBlue = true;
     });
 
-    mapTex = this.guiMaps.add(controls, "MapOutline").listen();
+    mapTex = this.guiMaps.add(controls, "MapPurple").listen();
     mapTex.onChange(function(value) {
         _this.onTextureChanged(value, MAP_OUTLINE);
-        _this.guiControls.MapOutline = true;
+        _this.guiControls.MapPurple = true;
     });
 
     var pos = this.guiMaps.add(controls, "MapX", -range, range).step(5);
@@ -412,6 +413,7 @@ Tate.prototype.createGUI = function() {
     });
 
     this.gui = gui;
+    this.guiControls = controls;
 };
 
 Tate.prototype.update = function() {
@@ -526,9 +528,9 @@ Tate.prototype.onMapScaleChange = function(value, axis) {
 };
 
 Tate.prototype.onTextureChanged = function(value, textureID) {
-    this.guiControls.MapDetailed = false;
-    this.guiControls.MapZones = false;
-    this.guiControls.MapOutline = false;
+    this.guiControls.MapGrey = false;
+    this.guiControls.MapBlue = false;
+    this.guiControls.MapPurple = false;
 
     this.worldMesh.material.materials[0].map = this.mapTextures[textureID];
     this.worldMesh.material.materials[0].map.needsUpdate = true;
