@@ -237,47 +237,47 @@ Tate.prototype.getNodeColour = function(type) {
             break;
 
         case "Researchers/Thinkers":
-            colour = LINES.LineColours["redOrange"];
+            colour = LINES.LineColours.redOrange;
             break;
 
         case "Curators":
-            colour = LINES.LineColours["orange"];
+            colour = LINES.LineColours.orange;
             break;
 
         case "Instigators":
-            colour = LINES.LineColours["yellowOrange"];
+            colour = LINES.LineColours.yellowOrange;
             break;
 
         case "Performances":
-            colour = LINES.LineColours["yellow"];
+            colour = LINES.LineColours.yellow;
             break;
 
         case "Interventions":
-            colour = LINES.LineColours["yellowGreen"];
+            colour = LINES.LineColours.yellowGreen;
             break;
 
         case "Exhibitions":
-            colour = LINES.LineColours["green"];
+            colour = LINES.LineColours.green;
             break;
 
         case "Initiatives":
-            colour = LINES.LineColours["blueGreen"];
+            colour = LINES.LineColours.blueGreen;
             break;
 
         case "Other artwork":
-            colour = LINES.LineColours["blue"];
+            colour = LINES.LineColours.blue;
             break;
 
         case "Institutions - Art":
-            colour = LINES.LineColours["blueViolet"];
+            colour = LINES.LineColours.blueViolet;
             break;
 
         case "Institutions - Other":
-            colour = LINES.LineColours["violet"];
+            colour = LINES.LineColours.violet;
             break;
 
         case "Public":
-            colour = LINES.LineColours["redViolet"];
+            colour = LINES.LineColours.redViolet;
             break;
 
         default:
@@ -485,7 +485,7 @@ Tate.prototype.onYearChange = function(value) {
         nodeYear = (node.position.y/currentScale);
         max = this.guiControls.YearMax - this.minYear;
         min = this.guiControls.YearMin - this.minYear;
-        nodeYear <= max && nodeYear >= min ? node.visible = true : node.visible = false;
+        node.visible = !(nodeYear <= max && nodeYear >= min);
         this.lineNodes[i].visible = node.visible;
     }
 };

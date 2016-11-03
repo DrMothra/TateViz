@@ -7,7 +7,6 @@ var gutil = require('gulp-util');
 var jshint = require('gulp-jshint');
 var concat = require('gulp-concat');
 var uglify = require('gulp-uglify');
-var exceljson = require('gulp-excel2json');
 
 gulp.task('jshint', function() {
     return gulp.src(['./js/*.js'])
@@ -21,8 +20,3 @@ gulp.task('build', function() {
         .pipe(gulp.dest('./dist/'));
 });
 
-gulp.task("exceljson", function () {
-    return gulp.src('./data/tate.xlsx')
-        .pipe(exceljson())
-        .pipe(gulp.dest('./js'))
-});

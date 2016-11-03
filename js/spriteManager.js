@@ -90,12 +90,12 @@ var spriteManager = (function () {
         },
 
         setBorderProperties: function(thickNess, colour) {
-            defaultBorderThickness = thickNess != undefined ? thickNess : defaultBorderThickness;
-            borderColour = colour != undefined ? 'rgba('+colour.r+','+colour.g+','+colour.b+','+colour.a+')' : borderColour;
+            defaultBorderThickness = thickNess !== undefined ? thickNess : defaultBorderThickness;
+            borderColour = colour !== undefined ? 'rgba('+colour.r+','+colour.g+','+colour.b+','+colour.a+')' : borderColour;
         },
 
         setBorderColour: function(colour) {
-            if(colour != undefined) {
+            if(colour !== undefined) {
                 var red = Math.round(colour[0]);
                 var green = Math.round(colour[1]);
                 var blue = Math.round(colour[2]);
@@ -105,7 +105,7 @@ var spriteManager = (function () {
         },
 
         setBackgroundColour: function(colour) {
-            if(colour != undefined) {
+            if(colour !== undefined) {
                 var red = Math.round(colour[0]);
                 var green = Math.round(colour[1]);
                 var blue = Math.round(colour[2]);
@@ -115,7 +115,7 @@ var spriteManager = (function () {
         },
 
         setTextColour: function(colour) {
-            if(colour != undefined) {
+            if(colour !== undefined) {
                 var red = Math.round(colour[0]);
                 var green = Math.round(colour[1]);
                 var blue = Math.round(colour[2]);
