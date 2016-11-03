@@ -43,8 +43,8 @@ Tate.prototype.createScene = function() {
     this.scenes[this.currentScene].add(this.rootGroup);
 
     //Camera
-    this.defaultCamPosY = 950;
-    this.defaultCamPosZ = 950;
+    this.defaultCamPosY = 700;
+    this.defaultCamPosZ = 700;
     this.currentLookAt = new THREE.Vector3();
     this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
     this.zoomInc = 1/100;
@@ -73,7 +73,7 @@ Tate.prototype.createScene = function() {
     this.mapTextures.push(textureLoader.load( "models/dotted-world-map-purple.png" ));
     var mapInfo = [];
     //MapX, MapZ, ScaleX, ScaleZ
-    var mapProperties = [0, 0, 1, 1,
+    var mapProperties = [-50, 85, 0.9, 0.8,
                         -50, 190, 1.1, 0.8,
                         -50, 50, 0.9, 0.9];
     var mapAdjust, index=0;
@@ -135,16 +135,21 @@ Tate.prototype.createScene = function() {
     //Get data
     this.minYear = 1966;
     this.maxYear = 2016;
-    this.labelXScale = 80;
-    this.labelYScale = 60;
+    this.labelXScale = 100;
+    this.labelYScale = 80;
+    this.circleXScale = 30;
+    this.circleYScale = 30;
+    var labelAlign = 50;
     var labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
+    var circleScale = new THREE.Vector3(this.circleXScale, this.circleYScale, 1);
     var i, j, nodeRadius = 5, nodeSegments = 24;
     var sphereGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
     var sphereMat = new THREE.MeshLambertMaterial( {color: 0xffff00} );
     var pos = new THREE.Vector3(), ground, mesh;
+    var labelPosition = new THREE.Vector3();
     this.pinNodes = [];
     this.lineNodes = [];
-    var label, line, limit = 20, type, colour;
+    var label, circle, line, limit = 20, type, colour;
     var numNodes = tateData.length;
     //var numNodes = 20;
     for(i=0; i<numNodes; ++i) {
@@ -159,14 +164,21 @@ Tate.prototype.createScene = function() {
                 if(type === nodeGroupTypes[j]) break;
             }
             colour = this.getNodeColour(type);
-            label = spriteManager.create(tateData[i]["Node name"], limit, colour, pos, labelScale, 32, 1, true, false);
-            //mesh = new THREE.Mesh(sphereGeom, sphereMat);
-            //mesh.position.copy(pos);
-            this.pinNodes.push(label);
-            ground = new THREE.Vector3(pos.x, 0, pos.z);
+            circle = circleSpriteManager.create(tateData[i]["Node name"], colour, pos, circleScale, 1, true);
+            this.pinNodes.push(circle);
+            mainNodeGroups[j].add(circle);
+            ground = new THREE.Vector3(pos.x, nodeRadius/2, pos.z);
             line = this.drawLink(pos, ground, lineNodeGroups[j], colour);
             this.lineNodes.push(line);
+            labelPosition.copy(pos);
+            labelPosition.x -= labelAlign;
+            label = spriteManager.create(tateData[i]["Node name"], limit, colour, labelPosition, labelScale, 32, 1, true, false);
+            this.pinNodes.push(label);
             mainNodeGroups[j].add(label);
+            //Spheres at bottom of node
+            mesh = new THREE.Mesh(sphereGeom, new THREE.MeshLambertMaterial( { color: colour.color}));
+            mesh.position.copy(ground);
+            mainNodeGroups[j].add(mesh);
         } else {
             //console.log("No location for ", i);
         }
@@ -287,7 +299,7 @@ Tate.prototype.createGUI = function() {
         this.LightX = 0;
         this.LightY = 50;
         this.LightZ = -600;
-        this.ScaleFactor = 1;
+        this.ScaleFactor = 5;
         this.LabelWidth = _this.labelXScale;
         this.LabelHeight = _this.labelYScale;
         this.YearMax = _this.maxYear;
@@ -414,6 +426,7 @@ Tate.prototype.createGUI = function() {
 
     this.gui = gui;
     this.guiControls = controls;
+    this.onScaleChange(controls.ScaleFactor);
 };
 
 Tate.prototype.update = function() {
