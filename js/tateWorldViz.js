@@ -74,8 +74,8 @@ Tate.prototype.createScene = function() {
     var mapInfo = [];
     //MapX, MapZ, ScaleX, ScaleZ
     var mapProperties = [-50, 85, 0.9, 0.8,
-                        -50, 190, 1.1, 0.8,
-                        -50, 50, 0.9, 0.9];
+                        -70, 85, 0.9, 0.8,
+                        -70, 85, 0.9, 0.8];
     var mapAdjust, index=0;
     for(var map=0; map<this.mapTextures.length; ++map) {
         mapAdjust = {};
@@ -87,6 +87,13 @@ Tate.prototype.createScene = function() {
     }
 
     this.mapInfo = mapInfo;
+
+    //Adjust initial map scale
+    var currentMap = this.mapInfo[0];
+    this.rootGroup.position.x = currentMap.MapX;
+    this.rootGroup.position.z = currentMap.MapZ;
+    this.rootGroup.scale.x = currentMap.MapScaleX;
+    this.rootGroup.scale.z = currentMap.MapScaleZ;
 
     this.loader = new THREE.JSONLoader();
 
@@ -148,6 +155,7 @@ Tate.prototype.createScene = function() {
     var pos = new THREE.Vector3(), ground, mesh;
     var labelPosition = new THREE.Vector3();
     this.pinNodes = [];
+    this.labelNodes = [];
     this.lineNodes = [];
     var label, circle, line, limit = 20, type, colour;
     var numNodes = tateData.length;
@@ -173,7 +181,7 @@ Tate.prototype.createScene = function() {
             labelPosition.copy(pos);
             labelPosition.x -= labelAlign;
             label = spriteManager.create(tateData[i]["Node name"], limit, colour, labelPosition, labelScale, 32, 1, true, false);
-            this.pinNodes.push(label);
+            this.labelNodes.push(label);
             mainNodeGroups[j].add(label);
             //Spheres at bottom of node
             mesh = new THREE.Mesh(sphereGeom, new THREE.MeshLambertMaterial( { color: colour.color}));
@@ -472,6 +480,7 @@ Tate.prototype.onScaleChange = function(value) {
 
     for(i=0; i<this.pinNodes.length; ++i) {
         this.pinNodes[i].position.y = (this.pinNodes[i].position.y/currentScale) * value;
+        this.labelNodes[i].position.y = this.pinNodes[i].position.y;
     }
 };
 
@@ -485,23 +494,24 @@ Tate.prototype.onYearChange = function(value) {
         nodeYear = (node.position.y/currentScale);
         max = this.guiControls.YearMax - this.minYear;
         min = this.guiControls.YearMin - this.minYear;
-        node.visible = !(nodeYear <= max && nodeYear >= min);
+        node.visible = (nodeYear <= max && nodeYear >= min);
         this.lineNodes[i].visible = node.visible;
+        this.labelNodes[i].visible = node.visible;
     }
 };
 
 Tate.prototype.onLabelScale = function(value, axis) {
-    var i, nodeLength = this.pinNodes.length;
+    var i, nodeLength = this.labelNodes.length;
     switch(axis) {
         case WIDTH:
             for(i=0; i<nodeLength; ++i) {
-                this.pinNodes[i].scale.x = value;
+                this.labelNodes[i].scale.x = value;
             }
             break;
 
         case HEIGHT:
             for(i=0; i<nodeLength; ++i) {
-                this.pinNodes[i].scale.y = value;
+                this.labelNodes[i].scale.y = value;
             }
             break;
 
@@ -721,6 +731,11 @@ Tate.prototype.camOffset = function(direction) {
 };
 
 $(document).ready(function() {
+    //See if we have WebGL support
+    if(!Detector.webgl) {
+        $('#notSupported').show();
+    }
+
     //Initialise app
     var container = document.getElementById("WebGL-output");
     var app = new Tate();

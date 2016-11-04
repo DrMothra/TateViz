@@ -38464,6 +38464,10 @@
 
     	start: function () {
 
+            if ("performance" in window == false) {
+                window.performance = null;
+            }
+
     		this.startTime = ( performance || Date ).now();
 
     		this.oldTime = this.startTime;
