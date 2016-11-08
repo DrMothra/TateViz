@@ -145,22 +145,22 @@ Tate.prototype.createScene = function() {
     this.labelXScale = 100;
     this.labelYScale = 80;
 
-    var labelAlign = 50;
-    var labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
-    var circleScale = new THREE.Vector3(this.circleXScale, this.circleYScale, 1);
-    var i, j, nodeRadius = 5, nodeSegments = 24;
+    var i, j;
+    var nodeRadius = 5, nodeSegments = 24;
     var sphereGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
-    var sphereMat = new THREE.MeshLambertMaterial( {color: 0xffff00} );
-    var pos = new THREE.Vector3(), ground, mesh;
-    var labelPosition = new THREE.Vector3();
+    var pos = new THREE.Vector3();
+
+    //Keep record of node parts
     this.pinNodes = [];
     this.labelNodes = [];
     this.lineNodes = [];
     this.mapNodes = [];
-    var mapNode;
-    var label, circle, line, limit = 20, type, colour, name;
+    this.mapInfoNodes = [];
+
+    var mapNode, mapInfoNode;
+    var label, line, type, name, pin, base;
     var numNodes = tateData.length;
-    //var numNodes = 20;
+
     for(i=0; i<numNodes; ++i) {
         pos = this.getNodePosition(tateData[i]["Location coordinates"], tateData[i].Start);
         if(pos !== undefined) {
@@ -178,24 +178,32 @@ Tate.prototype.createScene = function() {
                 console.log("Couldn't create node!");
                 continue;
             }
+            //Graphical attributes
             this.mapNodes.push(mapNode);
+            mapNode.setIndex(i);
+
             mapNode.setBaseGeometry(sphereGeom);
-            mapNode.setLinkgeometry(lineGeom);
 
-            this.pinNodes.push(circle);
-            mainNodeGroups[j].add(circle);
-            ground = new THREE.Vector3(pos.x, nodeRadius/2, pos.z);
-            line = this.drawLink(pos, ground, lineNodeGroups[j], colour);
+            pin = mapNode.getPin();
+            this.pinNodes.push(pin);
+            mainNodeGroups[j].add(pin);
+
+            line = mapNode.getLink();
             this.lineNodes.push(line);
-            labelPosition.copy(pos);
-            labelPosition.x -= labelAlign;
+            lineNodeGroups[j].add(line);
 
+            label = mapNode.getLabel();
             this.labelNodes.push(label);
             mainNodeGroups[j].add(label);
-            //Spheres at bottom of node
-            mesh = new THREE.Mesh(sphereGeom, new THREE.MeshLambertMaterial( { color: colour.color}));
-            mesh.position.copy(ground);
-            mainNodeGroups[j].add(mesh);
+
+            base = mapNode.getBaseMesh();
+            mainNodeGroups[j].add(base);
+
+            //Information
+            mapInfoNode = new MapNodeInfo();
+            this.mapInfoNodes.push(mapInfoNode);
+            mapInfoNode.setIndex(i);
+            mapInfoNode.setCountry(tateData[i].Country);
         }
     }
     this.mainNodeGroups = mainNodeGroups;
@@ -233,14 +241,6 @@ Tate.prototype.getNodePosition = function(location, date) {
 
     date -= this.minYear;
     return new THREE.Vector3(long, date, -lat);
-};
-
-Tate.prototype.drawLink = function(from, to, group, lineColour) {
-    var lineGeom = new THREE.Geometry();
-    lineGeom.vertices.push(from, to);
-    var link = new THREE.Line(lineGeom, lineColour);
-    group.add(link);
-    return link;
 };
 
 Tate.prototype.createGUI = function() {

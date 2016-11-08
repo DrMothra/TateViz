@@ -11,7 +11,7 @@ var MapNode = function() {
 };
 
 MapNode.prototype = {
-    init: function(type, name, pos) {
+    init: function(type, name, position) {
         var colour = this.getNodeColour(type);
         if(colour === undefined) {
             console.log("No colour for this type!");
@@ -20,7 +20,7 @@ MapNode.prototype = {
         this.type = type;
         this.colour = colour;
         this.name = name;
-        this.pos = new THREE.Vector3(pos.x, pos.y, pos.z);
+        this.position = new THREE.Vector3(position.x, position.y, position.z);
         this.circleXScale = 30;
         this.circleYScale = 30;
         this.circleScale = new THREE.Vector3(this.circleXScale, this.circleYScale, 1);
@@ -28,8 +28,15 @@ MapNode.prototype = {
         this.labelYScale = 80;
         this.labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
         this.labelPosition = new THREE.Vector3();
-        this.lineGeom = undefined;
         this.baseGeom = undefined;
+
+        //Create mapNode geometry
+        this.pin = this.createPin();
+        this.link = this.createLink();
+        this.label = this.createLabel();
+        this.baseMesh = this.createBaseMesh();
+
+        return true;
     },
 
     getNodeColour: function(type) {
@@ -93,36 +100,52 @@ MapNode.prototype = {
         return colour;
     },
 
-    setLineGeom: function(geom) {
-        this.lineGeom = geom;
+    setIndex: function(index) {
+        this.index = index;
     },
 
-    setBaseGeom: function(geom) {
+    setBaseGeometry: function(geom) {
         this.baseGeom = geom;
     },
 
     createPin: function() {
-        this.circle = circleSpriteManager.create(this.name, this.colour, this.pos, this.circleScale, 1, true);
-        this.link = this.createLink()
+        return circleSpriteManager.create(this.name, this.colour, this.position, this.circleScale, 1, true);
+    },
+
+    getPin: function() {
+        return this.pin;
     },
 
     createLink: function() {
         var lineGeom = new THREE.Geometry();
-        var to = new THREE.Vector3(this.pos.x, 0, this.pos.z);
-        lineGeom.vertices.push(this.pos, to);
+        var to = new THREE.Vector3(this.position.x, 0, this.position.z);
+        lineGeom.vertices.push(this.position, to);
         return new THREE.Line(lineGeom, this.colour);
+    },
+
+    getLink: function() {
+        return this.link;
     },
 
     createLabel: function() {
         var limit = 20;
         var labelAlign = 50;
-        this.labelPosition.copy(this.pos);
+        this.labelPosition.copy(this.position);
         this.labelPosition.x -= labelAlign;
-        this.label = spriteManager.create(this.name, limit, this.colour, this.labelPosition, this.labelScale, 32, 1, true, false);
+        return spriteManager.create(this.name, limit, this.colour, this.labelPosition, this.labelScale, 32, 1, true, false);
     },
 
-    createBase: function() {
-        var mesh = new THREE.Mesh(sphereGeom, new THREE.MeshLambertMaterial( { color: colour.color}));
-        mesh.position.copy(ground);
+    getLabel: function() {
+        return this.label;
+    },
+
+    createBaseMesh: function() {
+        var mesh = new THREE.Mesh(this.baseGeom, new THREE.MeshLambertMaterial( { color: this.colour.color}));
+        mesh.position.set(this.position.x, 0, this.position.z);
+        return mesh;
+    },
+
+    getBaseMesh: function() {
+        return this.baseMesh;
     }
 };
