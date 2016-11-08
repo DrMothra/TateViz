@@ -144,8 +144,7 @@ Tate.prototype.createScene = function() {
     this.maxYear = 2016;
     this.labelXScale = 100;
     this.labelYScale = 80;
-    this.circleXScale = 30;
-    this.circleYScale = 30;
+
     var labelAlign = 50;
     var labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
     var circleScale = new THREE.Vector3(this.circleXScale, this.circleYScale, 1);
@@ -157,7 +156,9 @@ Tate.prototype.createScene = function() {
     this.pinNodes = [];
     this.labelNodes = [];
     this.lineNodes = [];
-    var label, circle, line, limit = 20, type, colour;
+    this.mapNodes = [];
+    var mapNode;
+    var label, circle, line, limit = 20, type, colour, name;
     var numNodes = tateData.length;
     //var numNodes = 20;
     for(i=0; i<numNodes; ++i) {
@@ -171,8 +172,16 @@ Tate.prototype.createScene = function() {
             for(j=0; j<numGroups; ++j) {
                 if(type === nodeGroupTypes[j]) break;
             }
-            colour = this.getNodeColour(type);
-            circle = circleSpriteManager.create(tateData[i]["Node name"], colour, pos, circleScale, 1, true);
+            mapNode = new MapNode();
+            name = tateData[i]["Node short name"];
+            if(!mapNode.init(type, name, pos)) {
+                console.log("Couldn't create node!");
+                continue;
+            }
+            this.mapNodes.push(mapNode);
+            mapNode.setBaseGeometry(sphereGeom);
+            mapNode.setLinkgeometry(lineGeom);
+
             this.pinNodes.push(circle);
             mainNodeGroups[j].add(circle);
             ground = new THREE.Vector3(pos.x, nodeRadius/2, pos.z);
@@ -180,15 +189,13 @@ Tate.prototype.createScene = function() {
             this.lineNodes.push(line);
             labelPosition.copy(pos);
             labelPosition.x -= labelAlign;
-            label = spriteManager.create(tateData[i]["Node name"], limit, colour, labelPosition, labelScale, 32, 1, true, false);
+
             this.labelNodes.push(label);
             mainNodeGroups[j].add(label);
             //Spheres at bottom of node
             mesh = new THREE.Mesh(sphereGeom, new THREE.MeshLambertMaterial( { color: colour.color}));
             mesh.position.copy(ground);
             mainNodeGroups[j].add(mesh);
-        } else {
-            //console.log("No location for ", i);
         }
     }
     this.mainNodeGroups = mainNodeGroups;
@@ -234,67 +241,6 @@ Tate.prototype.drawLink = function(from, to, group, lineColour) {
     var link = new THREE.Line(lineGeom, lineColour);
     group.add(link);
     return link;
-};
-
-Tate.prototype.getNodeColour = function(type) {
-    //Get colour for specific node
-    var colour;
-    switch(type) {
-        case "Artists":
-            colour = LINES.LineColours.red;
-            break;
-
-        case "Researchers/Thinkers":
-            colour = LINES.LineColours.redOrange;
-            break;
-
-        case "Curators":
-            colour = LINES.LineColours.orange;
-            break;
-
-        case "Instigators":
-            colour = LINES.LineColours.yellowOrange;
-            break;
-
-        case "Performances":
-            colour = LINES.LineColours.yellow;
-            break;
-
-        case "Interventions":
-            colour = LINES.LineColours.yellowGreen;
-            break;
-
-        case "Exhibitions":
-            colour = LINES.LineColours.green;
-            break;
-
-        case "Initiatives":
-            colour = LINES.LineColours.blueGreen;
-            break;
-
-        case "Other artwork":
-            colour = LINES.LineColours.blue;
-            break;
-
-        case "Institutions - Art":
-            colour = LINES.LineColours.blueViolet;
-            break;
-
-        case "Institutions - Other":
-            colour = LINES.LineColours.violet;
-            break;
-
-        case "Public":
-            colour = LINES.LineColours.redViolet;
-            break;
-
-        default:
-            //DEBUG
-            console.log("No colour for type ", type);
-            break;
-    }
-
-    return colour;
 };
 
 Tate.prototype.createGUI = function() {
