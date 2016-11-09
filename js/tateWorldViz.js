@@ -157,7 +157,7 @@ Tate.prototype.createScene = function() {
     this.mapNodes = [];
     this.mapInfoNodes = [];
 
-    var mapNode, mapInfoNode;
+    var mapNode, mapInfoNode, nodeGroup;
     var label, line, type, name, pin, base;
     var numNodes = tateData.length;
 
@@ -186,18 +186,15 @@ Tate.prototype.createScene = function() {
 
             pin = mapNode.getPin();
             this.pinNodes.push(pin);
-            mainNodeGroups[j].add(pin);
 
             line = mapNode.getLink();
             this.lineNodes.push(line);
-            lineNodeGroups[j].add(line);
 
             label = mapNode.getLabel();
             this.labelNodes.push(label);
-            mainNodeGroups[j].add(label);
 
-            base = mapNode.getBaseMesh();
-            mainNodeGroups[j].add(base);
+            nodeGroup = mapNode.getNodeGroup();
+            mainNodeGroups[j].add(nodeGroup);
 
             //Information
             mapInfoNode = new MapNodeInfo();
@@ -207,6 +204,28 @@ Tate.prototype.createScene = function() {
         }
     }
     this.mainNodeGroups = mainNodeGroups;
+
+    //Sort by country
+    var countryGroups = [];
+    var countries = {};
+    var country, countryGroup;
+    var len;
+    for(i=0, len=this.mapInfoNodes.length; i<len; ++i) {
+        country = this.mapInfoNodes[i].getCountry();
+        if(!countries[country]) {
+            countries[country] = country;
+            countryGroup = new THREE.Object3D();
+            countryGroup.name = country;
+            countryGroup.add(this.mapNodes[i].getNodeGroup());
+            countryGroups.push(countryGroup);
+            this.scenes[this.currentScene].add(countryGroup);
+        } else {
+            countryGroup = this.scenes[this.currentScene].getObjectByName(country);
+            if(countryGroup) {
+                countryGroup.add(this.mapNodes[i].getNodeGroup());
+            }
+        }
+    }
 };
 
 Tate.prototype.getNodePosition = function(location, date) {

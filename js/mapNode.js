@@ -31,10 +31,16 @@ MapNode.prototype = {
         this.baseGeom = undefined;
 
         //Create mapNode geometry
+        this.nodeGroup = new THREE.Object3D();
+
         this.pin = this.createPin();
+        this.nodeGroup.add(this.pin);
         this.link = this.createLink();
+        this.nodeGroup.add(this.link);
         this.label = this.createLabel();
+        this.nodeGroup.add(this.label);
         this.baseMesh = this.createBaseMesh();
+        this.nodeGroup.add(this.baseMesh);
 
         return true;
     },
@@ -145,7 +151,7 @@ MapNode.prototype = {
         return mesh;
     },
 
-    getBaseMesh: function() {
-        return this.baseMesh;
+    getNodeGroup: function() {
+        return this.nodeGroup;
     }
 };
