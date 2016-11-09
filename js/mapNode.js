@@ -20,7 +20,8 @@ MapNode.prototype = {
         this.type = type;
         this.colour = colour;
         this.name = name;
-        this.position = new THREE.Vector3(position.x, position.y, position.z);
+        this.nodePosition = new THREE.Vector3(position.x, position.y, position.z);
+        this.position = new THREE.Vector3(0, position.y, 0);
         this.circleXScale = 30;
         this.circleYScale = 30;
         this.circleScale = new THREE.Vector3(this.circleXScale, this.circleYScale, 1);
@@ -32,15 +33,6 @@ MapNode.prototype = {
 
         //Create mapNode geometry
         this.nodeGroup = new THREE.Object3D();
-
-        this.pin = this.createPin();
-        this.nodeGroup.add(this.pin);
-        this.link = this.createLink();
-        this.nodeGroup.add(this.link);
-        this.label = this.createLabel();
-        this.nodeGroup.add(this.label);
-        this.baseMesh = this.createBaseMesh();
-        this.nodeGroup.add(this.baseMesh);
 
         return true;
     },
@@ -110,8 +102,17 @@ MapNode.prototype = {
         this.index = index;
     },
 
-    setBaseGeometry: function(geom) {
+    createGeometry: function(geom) {
         this.baseGeom = geom;
+        this.pin = this.createPin();
+        this.nodeGroup.add(this.pin);
+        this.link = this.createLink();
+        this.nodeGroup.add(this.link);
+        this.label = this.createLabel();
+        this.nodeGroup.add(this.label);
+        this.baseMesh = this.createBaseMesh();
+        this.nodeGroup.add(this.baseMesh);
+        this.nodeGroup.position.set(this.nodePosition.x, 0, this.nodePosition.z);
     },
 
     createPin: function() {
@@ -124,7 +125,7 @@ MapNode.prototype = {
 
     createLink: function() {
         var lineGeom = new THREE.Geometry();
-        var to = new THREE.Vector3(this.position.x, 0, this.position.z);
+        var to = new THREE.Vector3(0, 0, 0);
         lineGeom.vertices.push(this.position, to);
         return new THREE.Line(lineGeom, this.colour);
     },

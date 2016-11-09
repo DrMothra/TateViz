@@ -139,16 +139,27 @@ Tate.prototype.createScene = function() {
     this.nodeGroupTypes = nodeGroupTypes;
     this.lineNodeGroups = lineNodeGroups;
 
-    //Get data
-    this.minYear = 1966;
+    //Do any pre-sorting
+    var i, j, year;
+    var numNodes = tateData.length;
+    this.minYear = 2106;
     this.maxYear = 2016;
-    this.labelXScale = 100;
-    this.labelYScale = 80;
+    for(i=0; i<numNodes; ++i) {
+        year = tateData[i].Start;
+        year = year.slice(-4);
+        year = parseFloat(year);
+        if(isNaN(year)) {
+            console.log("Invalid date!");
+            continue;
+        }
+        if(year < this.minYear) this.minYear = year;
+    }
 
-    var i, j;
     var nodeRadius = 5, nodeSegments = 24;
     var sphereGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
     var pos = new THREE.Vector3();
+    this.labelXScale = 100;
+    this.labelYScale = 80;
 
     //Keep record of node parts
     this.pinNodes = [];
@@ -159,7 +170,6 @@ Tate.prototype.createScene = function() {
 
     var mapNode, mapInfoNode, nodeGroup;
     var label, line, type, name, pin, base;
-    var numNodes = tateData.length;
 
     for(i=0; i<numNodes; ++i) {
         pos = this.getNodePosition(tateData[i]["Location coordinates"], tateData[i].Start);
@@ -179,10 +189,9 @@ Tate.prototype.createScene = function() {
                 continue;
             }
             //Graphical attributes
-            this.mapNodes.push(mapNode);
+            mapNode.createGeometry(sphereGeom);
             mapNode.setIndex(i);
-
-            mapNode.setBaseGeometry(sphereGeom);
+            this.mapNodes.push(mapNode);
 
             pin = mapNode.getPin();
             this.pinNodes.push(pin);
@@ -210,6 +219,7 @@ Tate.prototype.createScene = function() {
     var countries = {};
     var country, countryGroup;
     var len;
+
     for(i=0, len=this.mapInfoNodes.length; i<len; ++i) {
         country = this.mapInfoNodes[i].getCountry();
         if(!countries[country]) {
@@ -218,7 +228,7 @@ Tate.prototype.createScene = function() {
             countryGroup.name = country;
             countryGroup.add(this.mapNodes[i].getNodeGroup());
             countryGroups.push(countryGroup);
-            this.scenes[this.currentScene].add(countryGroup);
+            this.rootGroup.add(countryGroup);
         } else {
             countryGroup = this.scenes[this.currentScene].getObjectByName(country);
             if(countryGroup) {
@@ -226,6 +236,21 @@ Tate.prototype.createScene = function() {
             }
         }
     }
+
+    //Calculate each country position
+    /*
+    var children;
+    var total = new THREE.Vector3();
+    for(i=0, len=countryGroups.length; i<len; ++i) {
+        countryGroup = countryGroups[i];
+        for(j=0, children=countryGroup.children.length; j<children; ++j) {
+            total.add(countryGroup.children[j].position);
+        }
+        total.multiplyScalar(1/children);
+        countryGroup.position.copy(total);
+        total.set(0, 0, 0);
+    }
+    */
 };
 
 Tate.prototype.getNodePosition = function(location, date) {
