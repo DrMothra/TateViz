@@ -238,9 +238,14 @@ Tate.prototype.createScene = function() {
     }
 
     //Calculate each country position
-    /*
+
     var children;
     var total = new THREE.Vector3();
+    //DEBUG
+    var label, labelScale = new THREE.Vector3(160, 90, 1);
+    var boxGeom = new THREE.BoxBufferGeometry(10, 10, 10);
+    var boxMat = new THREE.MeshLambertMaterial( {color: 0xff0000});
+    var box;
     for(i=0, len=countryGroups.length; i<len; ++i) {
         countryGroup = countryGroups[i];
         for(j=0, children=countryGroup.children.length; j<children; ++j) {
@@ -248,9 +253,13 @@ Tate.prototype.createScene = function() {
         }
         total.multiplyScalar(1/children);
         countryGroup.position.copy(total);
+        box = new THREE.Mesh(boxGeom, boxMat);
+        box.position.copy(total);
+        this.rootGroup.add(box);
+        label = spriteManager.create(countryGroup.name, 0, LINES.LineColours.red, total, labelScale, 32, 1, true, false);
+        this.rootGroup.add(label);
         total.set(0, 0, 0);
     }
-    */
 };
 
 Tate.prototype.getNodePosition = function(location, date) {
