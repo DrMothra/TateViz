@@ -89,6 +89,10 @@ MapNode.prototype = {
                 colour = LINES.LineColours.redViolet;
                 break;
 
+            case "Country":
+                colour = LINES.LineColours.blue;
+                break;
+
             default:
                 //DEBUG
                 console.log("No colour for type ", type);
