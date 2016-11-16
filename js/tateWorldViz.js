@@ -369,7 +369,7 @@ Tate.prototype.createGUI = function() {
         this.LightX = 0;
         this.LightY = 50;
         this.LightZ = -600;
-        this.ScaleFactor = 5;
+        this.ScaleFactor = 1;
         this.LabelWidth = _this.labelXScale;
         this.LabelHeight = _this.labelYScale;
         this.YearMax = _this.maxYear;
@@ -558,9 +558,9 @@ Tate.prototype.onLightChange = function(axis, pos) {
 Tate.prototype.onScaleChange = function(value) {
     //Change pin height
     var i;
-    var currentScale = this.lineNodeGroups[0].scale.y;
-    for(i=0; i<this.lineNodeGroups.length; ++i) {
-        this.lineNodeGroups[i].scale.y = value;
+    var currentScale = this.lineNodes[0].scale.y;
+    for(i=0; i<this.lineNodes.length; ++i) {
+        this.lineNodes[i].scale.y = value;
     }
 
     for(i=0; i<this.pinNodes.length; ++i) {
@@ -572,7 +572,7 @@ Tate.prototype.onScaleChange = function(value) {
 Tate.prototype.onYearChange = function(value) {
     //Display nodes between year ranges
     var i, node, nodeYear, max, min;
-    var currentScale = this.lineNodeGroups[0].scale.y;
+    var currentScale = this.lineNodes[0].scale.y;
     for(i=0; i<this.pinNodes.length; ++i) {
         node = this.pinNodes[i];
         if(!node.parent.visible) continue;
