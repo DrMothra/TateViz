@@ -17,7 +17,10 @@ var LINES = (function() {
         "blue": new THREE.LineBasicMaterial({color: 0x0000ff}),
         "blueViolet": new THREE.LineBasicMaterial({color: 0x3d01a4}),
         "violet": new THREE.LineBasicMaterial({color: 0x8601af}),
-        "redViolet": new THREE.LineBasicMaterial({color: 0xca0045})
+        "redViolet": new THREE.LineBasicMaterial({color: 0xca0045}),
+        "black": new THREE.LineBasicMaterial({color: 0x000000}),
+        "white": new THREE.LineBasicMaterial({color: 0xffffff}),
+        "country": new THREE.LineBasicMaterial({color: 0xf0981c})
     };
 
     return {

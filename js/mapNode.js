@@ -19,6 +19,7 @@ MapNode.prototype = {
         }
         this.type = type;
         this.colour = colour;
+        this.textColour = colour;
         this.name = name;
         this.nodePosition = new THREE.Vector3(position.x, position.y, position.z);
         this.position = new THREE.Vector3(0, position.y, 0);
@@ -28,6 +29,7 @@ MapNode.prototype = {
         this.labelXScale = 100;
         this.labelYScale = 80;
         this.labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
+        this.alignment = 50;
         this.labelPosition = new THREE.Vector3();
         this.baseGeom = undefined;
 
@@ -90,7 +92,7 @@ MapNode.prototype = {
                 break;
 
             case "Country":
-                colour = LINES.LineColours.blue;
+                colour = LINES.LineColours.country;
                 break;
 
             default:
@@ -106,7 +108,15 @@ MapNode.prototype = {
         this.index = index;
     },
 
-    createGeometry: function(geom) {
+    setAlign: function(alignment) {
+        this.alignment = alignment;
+    },
+
+    setTextColour: function(colour) {
+        this.textColour = colour;
+    },
+
+    createGeometry: function(geom, visible) {
         this.baseGeom = geom;
         this.pin = this.createPin();
         this.nodeGroup.add(this.pin);
@@ -117,6 +127,7 @@ MapNode.prototype = {
         this.baseMesh = this.createBaseMesh();
         this.nodeGroup.add(this.baseMesh);
         this.nodeGroup.position.set(this.nodePosition.x, 0, this.nodePosition.z);
+        this.nodeGroup.visible = visible;
     },
 
     createPin: function() {
@@ -140,10 +151,10 @@ MapNode.prototype = {
 
     createLabel: function() {
         var limit = 20;
-        var labelAlign = 50;
         this.labelPosition.copy(this.position);
-        this.labelPosition.x -= labelAlign;
-        return spriteManager.create(this.name, limit, this.colour, this.labelPosition, this.labelScale, 32, 1, true, false);
+        this.labelPosition.x -= this.alignment;
+        this.labelPosition.y += this.alignment ? 0 : 20;
+        return spriteManager.create(this.name, limit, this.textColour, this.labelPosition, this.labelScale, 32, 1, true, false);
     },
 
     getLabel: function() {
@@ -158,5 +169,9 @@ MapNode.prototype = {
 
     getNodeGroup: function() {
         return this.nodeGroup;
+    },
+
+    getNodeGroupPosition: function() {
+        return this.nodePosition;
     }
 };

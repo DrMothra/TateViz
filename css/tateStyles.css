@@ -45,6 +45,9 @@
 .dg .c div {
     box-sizing: content-box;
 }
+.dg .c select {
+    color: black;
+}
 #navigation {
     bottom: 1%;
     left: 1%;
