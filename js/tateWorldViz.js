@@ -124,6 +124,7 @@ Tate.prototype.createScene = function() {
         "Institutions - Other",
         "Public"
     ];
+    this.groupRadius = 100;
     var numGroups = nodeGroupTypes.length;
     var group;
     var mainNodeGroups = [];
@@ -191,7 +192,7 @@ Tate.prototype.createScene = function() {
                 continue;
             }
             //Graphical attributes
-            mapNode.createGeometry(this.baseGeom, false);
+            mapNode.createGeometry(this.baseGeom);
             mapNode.setIndex(i);
             this.mapNodes.push(mapNode);
 
@@ -218,8 +219,9 @@ Tate.prototype.createScene = function() {
 
     //Sort by country
     var countryGroups = [];
+    var countryTitleGroups = [];
     var countries = [];
-    var country, countryInfo, countryGroup, countryNode;
+    var country, countryInfo, countryTitleGroup, countryNode, countryGroup;
     var len;
     var found = false;
 
@@ -231,6 +233,10 @@ Tate.prototype.createScene = function() {
             if(countries[j].name === country) {
                 countries[j].nodeIds.push(mapInfoNode.index);
                 found = true;
+                //Add mapnode to country group
+                countryGroup = this.scenes[this.currentScene].getObjectByName(country+'Group');
+                if(!countryGroup) continue;
+                countryGroup.add(this.mapNodes[i].getNodeGroup());
                 break;
             }
         }
@@ -240,13 +246,20 @@ Tate.prototype.createScene = function() {
             countryInfo.nodeIds = [];
             countryInfo.nodeIds.push(mapInfoNode.index);
             countries.push(countryInfo);
-            countryGroup = new THREE.Object3D();
-            countryGroup.name = country;
-            countryGroups.push(countryGroup);
+            countryTitleGroup = new THREE.Object3D();
+            countryTitleGroup.name = country+'Title';
+            countryTitleGroups.push(countryTitleGroup);
             //Add representation for country nodes
             countryNode = this.createCountryNode(country);
             if(countryNode === undefined) continue;
-            countryGroup.add(countryNode);
+            countryTitleGroup.add(countryNode);
+            this.rootGroup.add(countryTitleGroup);
+            //Store map nodes into country group as well
+            countryGroup = new THREE.Object3D();
+            countryGroup.name = country+'Group';
+            countryGroups.push(countryGroup);
+            countryGroup.add(this.mapNodes[i].getNodeGroup());
+            countryGroup.visible = false;
             this.rootGroup.add(countryGroup);
         }
     }
@@ -263,7 +276,10 @@ Tate.prototype.createScene = function() {
             total.add(this.getMapNodePosition(countryIDs[j]));
         }
         total.multiplyScalar(1/children);
+        countryTitleGroups[i].position.set(total.x, 0, total.z);
         countryGroups[i].position.set(total.x, 0, total.z);
+        countryGroups[i].radius = this.groupRadius;
+        this.resizeGroup(countryGroups[i]);
         total.set(0, 0, 0);
     }
 };
@@ -313,6 +329,19 @@ Tate.prototype.getMapNodePosition = function(index) {
     return null;
 };
 
+Tate.prototype.resizeGroup = function(group) {
+    var length = group.children.length;
+    if(length <= 1) {
+        group.radius = 0;
+    }
+    var child, groupAngle, i;
+    for(i=0; i<length; ++i) {
+        groupAngle = (Math.PI*2) / length;
+        child = group.children[i];
+        child.position.set(group.radius * Math.sin(groupAngle*i), 0, group.radius * Math.cos(groupAngle*i));
+    }
+};
+
 Tate.prototype.createCountryNode = function(country) {
     //Create country representation
     var pos = new THREE.Vector3(0, 60, 0);
@@ -324,7 +353,7 @@ Tate.prototype.createCountryNode = function(country) {
     //Graphical attributes
     countryNode.setAlign(0);
     countryNode.setTextColour(LINES.LineColours.black);
-    countryNode.createGeometry(this.baseGeom, true);
+    countryNode.createGeometry(this.baseGeom);
     countryNode.setIndex(-1);
 
     return countryNode.getNodeGroup();
@@ -358,7 +387,7 @@ Tate.prototype.createGUI = function() {
         this.MapScaleZ = 1;
         this.Country = "";
         this.CountryGroup = true;
-        this.GroupScale = 1.0;
+        this.GroupScale = _this.groupRadius;
     };
 
     var controls = new guiControls();
@@ -475,13 +504,18 @@ Tate.prototype.createGUI = function() {
         countryNames.push(this.countries[i].name);
     }
     countries.add(controls, "Country", countryNames).onChange(function(value) {
-        _this.currentCountry = value;
-        console.log("Country = ", value);
+        _this.onChangeCountry(value);
     });
-    countries.add(controls, "CountryGroup").onChange(function(value) {
+    group = countries.add(controls, "CountryGroup").onChange(function(value) {
         _this.onShowCountry(value);
     });
-    countries.add(controls, "GroupScale", 0.5, 30);
+    group.listen();
+
+    var groupScale = countries.add(controls, "GroupScale", this.groupRadius, 500);
+    groupScale.onChange(function(value) {
+        _this.onGroupScaleChange(value);
+    });
+    groupScale.listen();
 
     this.gui = gui;
     this.guiControls = controls;
@@ -601,6 +635,28 @@ Tate.prototype.onMapScaleChange = function(value, axis) {
     }
 };
 
+Tate.prototype.onGroupScaleChange = function(value) {
+    if(this.currentCountry === "") {
+        console.log("No current country defined!");
+        return;
+    }
+
+    //Only scale individual nodes - not main title node
+    var countryGroup = this.scenes[this.currentScene].getObjectByName(this.currentCountry+"Group");
+    if(!countryGroup) {
+        console.log("No country group for country ", this.currentCountry);
+        return;
+    }
+
+    if(!countryGroup.visible) {
+        console.log("Nodes not visible - nothing to scale!");
+        return;
+    }
+
+    countryGroup.radius = value;
+    this.resizeGroup(countryGroup);
+};
+
 Tate.prototype.onTextureChanged = function(value, textureID) {
     this.guiControls.MapGrey = false;
     this.guiControls.MapBlue = false;
@@ -617,9 +673,39 @@ Tate.prototype.onTextureChanged = function(value, textureID) {
     this.rootGroup.scale.z = mapInfo.MapScaleZ;
 };
 
+Tate.prototype.onChangeCountry = function(country) {
+    this.currentCountry = country;
+    //Update other controls
+    var countryGroup = this.scenes[this.currentScene].getObjectByName(this.currentCountry+"Group");
+    if(!countryGroup) {
+        console.log("No country group for country ", this.currentCountry);
+        return;
+    }
+    this.guiControls.CountryGroup = !countryGroup.visible;
+    this.guiControls.GroupScale = countryGroup.radius;
+};
+
 Tate.prototype.onShowCountry = function(value) {
     //Toggle country node and artworks
+    if(this.currentCountry === "") {
+        console.log("No current country defined!");
+        return;
+    }
 
+    var titleGroup = this.scenes[this.currentScene].getObjectByName(this.currentCountry+"Title");
+    if(!titleGroup) {
+        console.log("No title group for country ", this.currentCountry);
+        return;
+    }
+
+    var countryGroup = this.scenes[this.currentScene].getObjectByName(this.currentCountry+"Group");
+    if(!countryGroup) {
+        console.log("No country group for country ", this.currentCountry);
+        return;
+    }
+
+    titleGroup.visible = value;
+    countryGroup.visible = !value;
 };
 
 Tate.prototype.showGroups = function(groupName, value) {

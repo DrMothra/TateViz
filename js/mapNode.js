@@ -116,7 +116,7 @@ MapNode.prototype = {
         this.textColour = colour;
     },
 
-    createGeometry: function(geom, visible) {
+    createGeometry: function(geom) {
         this.baseGeom = geom;
         this.pin = this.createPin();
         this.nodeGroup.add(this.pin);
@@ -127,7 +127,6 @@ MapNode.prototype = {
         this.baseMesh = this.createBaseMesh();
         this.nodeGroup.add(this.baseMesh);
         this.nodeGroup.position.set(this.nodePosition.x, 0, this.nodePosition.z);
-        this.nodeGroup.visible = visible;
     },
 
     createPin: function() {
