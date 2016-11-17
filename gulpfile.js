@@ -5,8 +5,10 @@
 var gulp = require('gulp');
 var gutil = require('gulp-util');
 var jshint = require('gulp-jshint');
-var concat = require('gulp-concat');
+var useref = require('gulp-useref');
 var uglify = require('gulp-uglify');
+var gulpIf = require('gulp-if');
+var cssnano = require('gulp-cssnano');
 
 gulp.task('jshint', function() {
     return gulp.src(['./js/*.js'])
@@ -15,8 +17,9 @@ gulp.task('jshint', function() {
 });
 
 gulp.task('build', function() {
-    return gulp.src('./js/*.js')
-        .pipe(concat('all.js'))
-        .pipe(gulp.dest('./dist/'));
+    return gulp.src('tateWorldViz.html')
+        .pipe(useref())
+        .pipe(gulpIf('*.js', uglify()))
+        .pipe(gulpIf('*.css', cssnano()))
+        .pipe(gulp.dest('dist'));
 });
-
