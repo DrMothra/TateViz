@@ -173,6 +173,7 @@ Tate.prototype.createScene = function() {
 
     var mapNode, mapInfoNode, nodeGroup;
     var label, line, type, name, pin, base;
+    var artist, artistNames = {};
 
     for(i=0; i<numNodes; ++i) {
         pos = this.getNodePosition(tateData[i]["Location coordinates"], tateData[i].Start);
@@ -210,12 +211,72 @@ Tate.prototype.createScene = function() {
 
             //Information
             mapInfoNode = new MapNodeInfo();
+            artist = tateData[i]["Made by"];
+            if(artist !== "") {
+                mapInfoNode.addCreator(artist);
+                if(!artistNames[artist]) {
+                    artistNames[artist] = [];
+                    artistNames[artist].push(i);
+                } else {
+                    artistNames[artist].push(i);
+                }
+            }
             this.mapInfoNodes.push(mapInfoNode);
             mapInfoNode.setIndex(i);
             mapInfoNode.setCountry(tateData[i].Country);
         }
     }
     this.mainNodeGroups = mainNodeGroups;
+
+    //Artists with multiple works
+    var multipleArtists = [];
+    var artistInfo;
+    for(var key in artistNames) {
+        if(artistNames[key].length > 1) {
+            artistInfo = {};
+            artistInfo.name = key;
+            artistInfo.nodes = artistNames[key];
+            multipleArtists.push(artistInfo);
+        }
+    }
+
+    //Add artist links
+    var labelPos = new THREE.Vector3();
+    var labelScale = new THREE.Vector3(200, 150, 1);
+    var ids, nodeLength;
+    var CUBA = new THREE.Vector3(-457.85, 60, -128.31);
+    var UK = new THREE.Vector3(-4.13, 60, -289);
+    var USA = new THREE.Vector3(-539.63, 60, -217.4);
+    var POLAND = new THREE.Vector3(116.92, 60, -290.56);
+    var countryPos = [
+        [CUBA, UK],
+        [USA, UK],
+        [USA],
+        [POLAND, UK],
+        [UK]
+    ];
+    var links, link;
+    var linkGroup = new THREE.Object3D();
+    linkGroup.visible = false;
+    this.rootGroup.add(linkGroup);
+    for(i=0, len=multipleArtists.length; i<len; ++i) {
+        ids = multipleArtists[i].nodes;
+        for(j=0, nodeLength=ids.length; j<nodeLength; ++j) {
+            labelPos.add(this.getMapNodePosition(ids[j]));
+        }
+        labelPos.multiplyScalar(1/nodeLength);
+        labelPos.y = 75;
+        label = spriteManager.create(multipleArtists[i].name, 0, LINES.LineColours.white, labelPos, labelScale, 32, 1, true, false);
+        linkGroup.add(label);
+        //Links
+        links = countryPos[i];
+        for(j=0, nodeLength=links.length; j<nodeLength; ++j) {
+            link = this.drawLink(labelPos, links[j], LINES.LineColours.white);
+            linkGroup.add(link);
+        }
+        labelPos.set(0, 0, 0);
+    }
+    this.linkGroup = linkGroup;
 
     //Sort by country
     var countryGroups = [];
@@ -359,6 +420,13 @@ Tate.prototype.createCountryNode = function(country) {
     return countryNode.getNodeGroup();
 };
 
+Tate.prototype.drawLink = function(from, to, lineColour) {
+    var lineGeom = new THREE.Geometry();
+    var fromVec = new THREE.Vector3(from.x, from.y+20, from.z);
+    lineGeom.vertices.push(fromVec, to);
+    return new THREE.Line(lineGeom, lineColour);
+};
+
 Tate.prototype.createGUI = function() {
     //GUI - using dat.GUI
     var _this = this;
@@ -388,6 +456,7 @@ Tate.prototype.createGUI = function() {
         this.Country = "";
         this.CountryGroup = true;
         this.GroupScale = _this.groupRadius;
+        this.MadeBy = false;
     };
 
     var controls = new guiControls();
@@ -516,6 +585,12 @@ Tate.prototype.createGUI = function() {
         _this.onGroupScaleChange(value);
     });
     groupScale.listen();
+
+    //Links
+    var links = gui.addFolder("Links");
+    links.add(controls, "MadeBy").onChange(function(value) {
+        _this.onLinksChanged(value);
+    });
 
     this.gui = gui;
     this.guiControls = controls;
@@ -706,6 +781,10 @@ Tate.prototype.onShowCountry = function(value) {
 
     titleGroup.visible = value;
     countryGroup.visible = !value;
+};
+
+Tate.prototype.onLinksChanged = function(value) {
+    this.linkGroup.visible = value;
 };
 
 Tate.prototype.showGroups = function(groupName, value) {

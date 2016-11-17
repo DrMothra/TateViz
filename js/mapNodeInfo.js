@@ -4,7 +4,8 @@
 //Map node information
 
 var MapNodeInfo = function() {
-
+    //Links
+    this.madeBy = [];
 };
 
 MapNodeInfo.prototype = {
@@ -18,5 +19,9 @@ MapNodeInfo.prototype = {
 
     getCountry: function() {
         return this.country;
+    },
+
+    addCreator: function(names) {
+        this.madeBy.push(names);
     }
 };
