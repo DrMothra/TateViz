@@ -140,6 +140,7 @@ var spriteManager = (function () {
 function roundRect(ctx, offset, x, y, w, h, r)
 {
     x += offset;
+    y += 30;
     ctx.beginPath();
     ctx.moveTo(x+r, y);
     ctx.lineTo(x+w-r, y);

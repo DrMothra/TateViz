@@ -153,7 +153,7 @@ MapNode.prototype = {
         this.labelPosition.copy(this.position);
         this.labelPosition.x -= this.alignment;
         this.labelPosition.y += this.alignment ? 0 : 20;
-        return spriteManager.create(this.name, limit, this.textColour, this.labelPosition, this.labelScale, 32, 1, true, false);
+        return spriteManager.create(this.name, limit, this.textColour, this.labelPosition, this.labelScale, 32, 1, true, true);
     },
 
     getLabel: function() {

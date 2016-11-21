@@ -107,6 +107,7 @@ Tate.prototype.createScene = function() {
 
         _this.scenes[_this.currentScene].add(mesh);
         _this.worldMesh = mesh;
+        _this.worldMesh.visible = false;
     });
 
     //Groups
@@ -314,13 +315,14 @@ Tate.prototype.createScene = function() {
             countryNode = this.createCountryNode(country);
             if(countryNode === undefined) continue;
             countryTitleGroup.add(countryNode);
+            countryTitleGroup.visible = false;
             this.rootGroup.add(countryTitleGroup);
             //Store map nodes into country group as well
             countryGroup = new THREE.Object3D();
             countryGroup.name = country+'Group';
             countryGroups.push(countryGroup);
             countryGroup.add(this.mapNodes[i].getNodeGroup());
-            countryGroup.visible = false;
+            countryGroup.visible = true;
             this.rootGroup.add(countryGroup);
         }
     }
@@ -415,7 +417,7 @@ Tate.prototype.createCountryNode = function(country) {
     }
     //Graphical attributes
     countryNode.setAlign(0);
-    countryNode.setTextColour(LINES.LineColours.black);
+    countryNode.setTextColour(LINES.LineColours.white);
     countryNode.createGeometry(this.baseGeom);
     countryNode.setIndex(-1);
 
@@ -448,6 +450,7 @@ Tate.prototype.createGUI = function() {
             this[_this.nodeGroupTypes[i]] = true;
         }
         this.ShowAll = true;
+        this.MapVisible = false;
         this.MapGrey = true;
         this.MapBlue = false;
         this.MapPurple = false;
@@ -456,7 +459,7 @@ Tate.prototype.createGUI = function() {
         this.MapScaleX = 1;
         this.MapScaleZ = 1;
         this.Country = "All";
-        this.CountryGroup = true;
+        this.CountryGroup = false;
         this.Nodes = _this.mapNodes.length;
         this.GroupScale = _this.groupRadius;
         this.MadeBy = false;
@@ -530,6 +533,9 @@ Tate.prototype.createGUI = function() {
     //Maps
     var range = 300;
     this.guiMaps = gui.addFolder("Maps");
+    var mapVis = this.guiMaps.add(controls, 'MapVisible').onChange(function(value) {
+        _this.onChangeMapVis(value);
+    });
     var mapTex = this.guiMaps.add(controls, "MapGrey").listen();
     mapTex.onChange(function(value) {
         _this.onTextureChanged(value, MAP_DETAILED);
@@ -749,6 +755,10 @@ Tate.prototype.onGroupScaleChange = function(value) {
 
     countryGroup.radius = value;
     this.resizeGroup(countryGroup);
+};
+
+Tate.prototype.onChangeMapVis = function(value) {
+    this.worldMesh.visible = value;
 };
 
 Tate.prototype.onTextureChanged = function(value, textureID) {
