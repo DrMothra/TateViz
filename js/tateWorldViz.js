@@ -325,7 +325,9 @@ Tate.prototype.sortCountryPosition = function() {
         this.countryTitleGroups[i].position.set(total.x, 0, total.z);
         this.countryGroups[i].position.set(total.x, 0, total.z);
         this.countryGroups[i].radius = this.groupRadius;
-        this.resizeGroup(this.countryGroups[i]);
+        //DEBUG
+        //this.resizeGroup(this.countryGroups[i]);
+        this.updateMapNodes(this.countries[i], this.groupRadius, total);
         total.set(0, 0, 0);
     }
 };
@@ -426,6 +428,21 @@ Tate.prototype.resizeGroup = function(group) {
         groupAngle = (Math.PI*2) / length;
         child = group.children[i];
         child.position.set(group.radius * Math.sin(groupAngle*i), 0, group.radius * Math.cos(groupAngle*i));
+    }
+};
+
+Tate.prototype.updateMapNodes = function(country, radius, to) {
+    var numChildren = country.nodeIds.length;
+    if(numChildren <= 1) {
+        return;
+    }
+
+    var node, groupAngle, i, from = new THREE.Vector3();
+    for(i=0; i<numChildren; ++i) {
+        groupAngle = (Math.PI*2) / numChildren;
+        node = country.nodeIds[i];
+        from.set(radius * Math.sin(groupAngle*i), 0, radius * Math.cos(groupAngle*i));
+        this.mapNodes[node].updateLink(from, to);
     }
 };
 
@@ -666,7 +683,8 @@ Tate.prototype.onLightChange = function(axis, pos) {
 };
 
 Tate.prototype.onScaleChange = function(value) {
-    //Change pin height
+    //Change node height
+
     var i;
     var currentScale = this.lineNodes[0].scale.y;
     for(i=0; i<this.lineNodes.length; ++i) {

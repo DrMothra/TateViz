@@ -7,7 +7,6 @@ var MapNode = function() {
     this.type = undefined;
     this.pin = undefined;
     this.link = undefined;
-    this.base = undefined;
 };
 
 MapNode.prototype = {
@@ -141,11 +140,17 @@ MapNode.prototype = {
         var lineGeom = new THREE.Geometry();
         var to = new THREE.Vector3(0, 0, 0);
         lineGeom.vertices.push(this.position, to);
-        return new THREE.Line(lineGeom, this.colour);
+        this.link = new THREE.Line(lineGeom, this.colour);
+        return this.link;
     },
 
     getLink: function() {
         return this.link;
+    },
+
+    updateLink: function(from, to) {
+        this.link.geometry.vertices[0].copy(from);
+        this.link.geometry.vertices[1].copy(to);
     },
 
     createLabel: function() {
