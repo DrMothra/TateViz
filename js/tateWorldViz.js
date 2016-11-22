@@ -8,6 +8,7 @@ var MOVE_INC = 5;
 var STOP=0;
 var WIDTH = 0, HEIGHT = 1;
 var MAP_DETAILED = 0, MAP_ZONES = 1, MAP_OUTLINE = 2;
+var TYPE = 0;
 
 //Init this app from base
 function Tate() {
@@ -41,6 +42,15 @@ Tate.prototype.createScene = function() {
     var _this = this;
     BaseApp.prototype.createScene.call(this);
 
+    //General helpers
+    this.textureLoader = new THREE.TextureLoader();
+    this.loader = new THREE.JSONLoader();
+    this.xMax = 1000;
+    this.xMin = -1000;
+    this.yMax = 500;
+    this.yMin = -500;
+
+    //Scene hierarchy
     this.rootGroup = new THREE.Object3D();
     this.scenes[this.currentScene].add(this.rootGroup);
 
@@ -60,45 +70,10 @@ Tate.prototype.createScene = function() {
     this.camOffsets.Bottom = new THREE.Vector3(0, 0, 560);
     this.camOffsets.Left = new THREE.Vector3(-1280, 0, -150);
 
-    //Model loading
-    this.xMax = 1000;
-    this.xMin = -1000;
-    this.yMax = 500;
-    this.yMin = -500;
-
     //Map textures
-    var textureLoader = new THREE.TextureLoader();
-    this.currentMap = 0;
-    this.mapTextures = [];
-    this.mapTextures.push(textureLoader.load( "models/dotted-world-map-light-grey.png" ));
-    this.mapTextures.push(textureLoader.load( "models/dotted-world-map-blue.png" ));
-    this.mapTextures.push(textureLoader.load( "models/dotted-world-map-purple.png" ));
-    var mapInfo = [];
-    //MapX, MapZ, ScaleX, ScaleZ
-    var mapProperties = [-50, 85, 0.9, 0.8,
-                        -70, 85, 0.9, 0.8,
-                        -70, 85, 0.9, 0.8];
-    var mapAdjust, index=0;
-    for(var map=0; map<this.mapTextures.length; ++map) {
-        mapAdjust = {};
-        mapAdjust.MapX = mapProperties[index++];
-        mapAdjust.MapZ = mapProperties[index++];
-        mapAdjust.MapScaleX = mapProperties[index++];
-        mapAdjust.MapScaleZ = mapProperties[index++];
-        mapInfo.push(mapAdjust);
-    }
+    this.createMaps();
 
-    this.mapInfo = mapInfo;
-
-    //Adjust initial map scale
-    var currentMap = this.mapInfo[0];
-    this.rootGroup.position.x = currentMap.MapX;
-    this.rootGroup.position.z = currentMap.MapZ;
-    this.rootGroup.scale.x = currentMap.MapScaleX;
-    this.rootGroup.scale.z = currentMap.MapScaleZ;
-
-    this.loader = new THREE.JSONLoader();
-
+    //Model loading
     this.loader.load('./models/worldBase.json', function (geometry, materials) {
         materials[0].map = _this.mapTextures[0];
         var mesh = new THREE.Mesh(geometry, new THREE.MultiMaterial(materials));
@@ -111,53 +86,10 @@ Tate.prototype.createScene = function() {
     });
 
     //Groups
-    var nodeGroupTypes = [
-        "Artists",
-        "Researchers/Thinkers",
-        "Curators",
-        "Instigators",
-        "Performances",
-        "Interventions",
-        "Exhibitions",
-        "Initiatives",
-        "Other artwork",
-        "Institutions - Art",
-        "Institutions - Other",
-        "Public"
-    ];
-    this.groupRadius = 100;
-    var numGroups = nodeGroupTypes.length;
-    var group;
-    var mainNodeGroups = [];
-    var lineNodeGroups = [];
-    for(i=0; i<numGroups; ++i) {
-        group = new THREE.Object3D();
-        group.name = nodeGroupTypes[i];
-        mainNodeGroups.push(group);
-        this.rootGroup.add(group);
-        group = new THREE.Object3D();
-        group.name = nodeGroupTypes[i]+"Line";
-        lineNodeGroups.push(group);
-        this.rootGroup.add(group);
-    }
-    this.nodeGroupTypes = nodeGroupTypes;
-    this.lineNodeGroups = lineNodeGroups;
+    this.sortNodesByType();
 
     //Do any pre-sorting
-    var i, j, year;
-    var numNodes = tateData.length;
-    this.minYear = 2106;
-    this.maxYear = 2016;
-    for(i=0; i<numNodes; ++i) {
-        year = tateData[i].Start;
-        year = year.slice(-4);
-        year = parseFloat(year);
-        if(isNaN(year)) {
-            console.log("Invalid date!");
-            continue;
-        }
-        if(year < this.minYear) this.minYear = year;
-    }
+    this.getYearRanges();
 
     var nodeRadius = 5, nodeSegments = 24;
     this.baseGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
@@ -166,14 +98,13 @@ Tate.prototype.createScene = function() {
     this.labelYScale = 80;
 
     //Keep record of node parts
-    this.pinNodes = [];
-    this.labelNodes = [];
-    this.lineNodes = [];
+    var numNodes = tateData.length;
+
     this.mapNodes = [];
     this.mapInfoNodes = [];
 
-    var mapNode, mapInfoNode, nodeGroup;
-    var label, line, type, name, pin, base;
+    var mapNode, mapInfoNode, nodeGroup, i, j;
+    var label, type, name, typeIndex;
     var artist, artistNames = {};
 
     for(i=0; i<numNodes; ++i) {
@@ -184,9 +115,7 @@ Tate.prototype.createScene = function() {
                 console.log("Invalid type");
                 continue;
             }
-            for(j=0; j<numGroups; ++j) {
-                if(type === nodeGroupTypes[j]) break;
-            }
+            typeIndex = this.getTypeIndex(type);
             mapNode = new MapNode();
             name = tateData[i]["Node short name"];
             if(!mapNode.init(type, name, pos)) {
@@ -198,17 +127,8 @@ Tate.prototype.createScene = function() {
             mapNode.setIndex(i);
             this.mapNodes.push(mapNode);
 
-            pin = mapNode.getPin();
-            this.pinNodes.push(pin);
-
-            line = mapNode.getLink();
-            this.lineNodes.push(line);
-
-            label = mapNode.getLabel();
-            this.labelNodes.push(label);
-
             nodeGroup = mapNode.getNodeGroup();
-            mainNodeGroups[j].add(nodeGroup);
+            this.nodeTypeGroups[typeIndex].add(nodeGroup);
 
             //Information
             mapInfoNode = new MapNodeInfo();
@@ -227,24 +147,17 @@ Tate.prototype.createScene = function() {
             mapInfoNode.setCountry(tateData[i].Country);
         }
     }
-    this.mainNodeGroups = mainNodeGroups;
 
+    this.artistNames = artistNames;
     //Artists with multiple works
-    var multipleArtists = [];
-    var artistInfo;
-    for(var key in artistNames) {
-        if(artistNames[key].length > 1) {
-            artistInfo = {};
-            artistInfo.name = key;
-            artistInfo.nodes = artistNames[key];
-            multipleArtists.push(artistInfo);
-        }
-    }
+    this.multipleArtists = this.getMultipleArtists();
 
     //Add artist links
     var labelPos = new THREE.Vector3();
     var labelScale = new THREE.Vector3(200, 150, 1);
     var ids, nodeLength;
+    //DEBUG
+    //HARD CODE THIS FOR NOW!!!
     var CUBA = new THREE.Vector3(-457.85, 60, -128.31);
     var UK = new THREE.Vector3(-4.13, 60, -289);
     var USA = new THREE.Vector3(-539.63, 60, -217.4);
@@ -260,14 +173,14 @@ Tate.prototype.createScene = function() {
     var linkGroup = new THREE.Object3D();
     linkGroup.visible = false;
     this.rootGroup.add(linkGroup);
-    for(i=0, len=multipleArtists.length; i<len; ++i) {
-        ids = multipleArtists[i].nodes;
+    for(i=0, len=this.multipleArtists.length; i<len; ++i) {
+        ids = this.multipleArtists[i].nodes;
         for(j=0, nodeLength=ids.length; j<nodeLength; ++j) {
             labelPos.add(this.getMapNodePosition(ids[j]));
         }
         labelPos.multiplyScalar(1/nodeLength);
         labelPos.y = 75;
-        label = spriteManager.create(multipleArtists[i].name, 0, LINES.LineColours.white, labelPos, labelScale, 32, 1, true, false);
+        label = spriteManager.create(this.multipleArtists[i].name, 0, LINES.LineColours.white, labelPos, labelScale, 32, 1, true, false);
         linkGroup.add(label);
         //Links
         links = countryPos[i];
@@ -280,14 +193,81 @@ Tate.prototype.createScene = function() {
     this.linkGroup = linkGroup;
 
     //Sort by country
+    this.sortNodesByCountry();
+
+    //Calculate each country position
+    this.sortCountryPosition();
+};
+
+Tate.prototype.createMaps = function() {
+    this.currentMap = 0;
+    this.mapTextures = [];
+    this.mapTextures.push(this.textureLoader.load( "models/dotted-world-map-light-grey.png" ));
+    this.mapTextures.push(this.textureLoader.load( "models/dotted-world-map-blue.png" ));
+    this.mapTextures.push(this.textureLoader.load( "models/dotted-world-map-purple.png" ));
+    var mapInfo = [];
+    //MapX, MapZ, ScaleX, ScaleZ
+    var mapProperties = [-50, 85, 0.9, 0.8,
+        -70, 85, 0.9, 0.8,
+        -70, 85, 0.9, 0.8];
+    var mapAdjust, index=0;
+    for(var map=0; map<this.mapTextures.length; ++map) {
+        mapAdjust = {};
+        mapAdjust.MapX = mapProperties[index++];
+        mapAdjust.MapZ = mapProperties[index++];
+        mapAdjust.MapScaleX = mapProperties[index++];
+        mapAdjust.MapScaleZ = mapProperties[index++];
+        mapInfo.push(mapAdjust);
+    }
+
+    this.mapInfo = mapInfo;
+
+    //Adjust initial map scale
+    var currentMap = this.mapInfo[0];
+    this.rootGroup.position.x = currentMap.MapX;
+    this.rootGroup.position.z = currentMap.MapZ;
+    this.rootGroup.scale.x = currentMap.MapScaleX;
+    this.rootGroup.scale.z = currentMap.MapScaleZ;
+};
+
+Tate.prototype.sortNodesByType = function() {
+    var nodeTypes = [
+        "Artists",
+        "Researchers/Thinkers",
+        "Curators",
+        "Instigators",
+        "Performances",
+        "Interventions",
+        "Exhibitions",
+        "Initiatives",
+        "Other artwork",
+        "Institutions - Art",
+        "Institutions - Other",
+        "Public"
+    ];
+    this.groupRadius = 100;
+    var numTypes = nodeTypes.length;
+    var group, i;
+    var nodeTypeGroups = [];
+    for(i=0; i<numTypes; ++i) {
+        group = new THREE.Object3D();
+        group.name = nodeTypes[i];
+        nodeTypeGroups.push(group);
+        this.rootGroup.add(group);
+    }
+    this.nodeTypeGroups = nodeTypeGroups;
+    this.nodeTypes = nodeTypes;
+};
+
+Tate.prototype.sortNodesByCountry = function() {
     var countryGroups = [];
     var countryTitleGroups = [];
     var countries = [];
     var country, countryInfo, countryTitleGroup, countryNode, countryGroup;
-    var len;
+    var i, j, numNodes, mapInfoNode;
     var found = false;
 
-    for(i=0, len=this.mapInfoNodes.length; i<len; ++i) {
+    for(i=0, numNodes=this.mapInfoNodes.length; i<numNodes; ++i) {
         mapInfoNode = this.mapInfoNodes[i];
         country = mapInfoNode.getCountry();
         found = false;
@@ -330,23 +310,65 @@ Tate.prototype.createScene = function() {
     this.countryGroups = countryGroups;
     this.countryTitleGroups = countryTitleGroups;
     this.countries = countries;
+};
 
-    //Calculate each country position
-    var children;
+Tate.prototype.sortCountryPosition = function() {
+    var children, i, j, numCountries;
     var total = new THREE.Vector3();
     var countryIDs = [];
-    for(i=0, len=countries.length; i<len; ++i) {
-        countryIDs = countries[i].nodeIds;
+    for(i=0, numCountries=this.countries.length; i<numCountries; ++i) {
+        countryIDs = this.countries[i].nodeIds;
         for(j=0, children=countryIDs.length; j<children; ++j) {
             total.add(this.getMapNodePosition(countryIDs[j]));
         }
         total.multiplyScalar(1/children);
-        countryTitleGroups[i].position.set(total.x, 0, total.z);
-        countryGroups[i].position.set(total.x, 0, total.z);
-        countryGroups[i].radius = this.groupRadius;
-        this.resizeGroup(countryGroups[i]);
+        this.countryTitleGroups[i].position.set(total.x, 0, total.z);
+        this.countryGroups[i].position.set(total.x, 0, total.z);
+        this.countryGroups[i].radius = this.groupRadius;
+        this.resizeGroup(this.countryGroups[i]);
         total.set(0, 0, 0);
     }
+};
+
+Tate.prototype.getTypeIndex = function(type) {
+    var i, numTypes;
+    for(i=0, numTypes=this.nodeTypes.length; i<numTypes; ++i) {
+        if(this.nodeTypes[i] === type) return i;
+    }
+
+    return null;
+};
+
+Tate.prototype.getYearRanges = function() {
+    var i, year;
+    var numNodes = tateData.length;
+    this.minYear = 2106;
+    this.maxYear = 2016;
+    for(i=0; i<numNodes; ++i) {
+        year = tateData[i].Start;
+        year = year.slice(-4);
+        year = parseFloat(year);
+        if(isNaN(year)) {
+            console.log("Invalid date!");
+            continue;
+        }
+        if(year < this.minYear) this.minYear = year;
+    }
+};
+
+Tate.prototype.getMultipleArtists = function() {
+    var multipleArtists = [];
+    var artistInfo;
+    for(var key in this.artistNames) {
+        if(this.artistNames[key].length > 1) {
+            artistInfo = {};
+            artistInfo.name = key;
+            artistInfo.nodes = this.artistNames[key];
+            multipleArtists.push(artistInfo);
+        }
+    }
+
+    return multipleArtists.length ? multipleArtists : null;
 };
 
 Tate.prototype.getNodePosition = function(location, date) {
@@ -446,8 +468,8 @@ Tate.prototype.createGUI = function() {
         this.LabelHeight = _this.labelYScale;
         this.YearMax = _this.maxYear;
         this.YearMin = _this.minYear;
-        for(var i=0; i<_this.nodeGroupTypes.length; ++i) {
-            this[_this.nodeGroupTypes[i]] = true;
+        for(var i=0; i<_this.nodeTypes.length; ++i) {
+            this[_this.nodeTypes[i]] = true;
         }
         this.ShowAll = true;
         this.MapVisible = false;
@@ -518,10 +540,10 @@ Tate.prototype.createGUI = function() {
 
     var group;
     this.guiGroups = gui.addFolder("Groups");
-    for(var i=0; i<this.nodeGroupTypes.length; ++i) {
+    for(var i=0; i<this.nodeTypes.length; ++i) {
         (function(item) {
-            group = _this.guiGroups.add(controls, _this.nodeGroupTypes[item]).onChange(function(value) {
-                _this.showGroups(_this.nodeGroupTypes[item], value);
+            group = _this.guiGroups.add(controls, _this.nodeTypes[item]).onChange(function(value) {
+                _this.showGroups(_this.nodeTypes[item], value);
             });
             group.listen();
         })(i);
@@ -606,7 +628,8 @@ Tate.prototype.createGUI = function() {
 
     this.gui = gui;
     this.guiControls = controls;
-    this.onScaleChange(controls.ScaleFactor);
+    //DEBUG
+    //this.onScaleChange(controls.ScaleFactor);
 };
 
 Tate.prototype.update = function() {

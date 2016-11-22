@@ -1,6 +1,5 @@
 {
     "materials":[{
-        "mapDiffuse":"earth.jpg",
         "colorSpecular":[0.5,0.5,0.5],
         "shading":"phong",
         "mapDiffuseWrap":["RepeatWrapping","RepeatWrapping"],
