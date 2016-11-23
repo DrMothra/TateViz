@@ -50,6 +50,15 @@ Tate.prototype.createScene = function() {
     this.yMax = 500;
     this.yMin = -500;
 
+    //Test
+    var geom= new THREE.BoxBufferGeometry(10, 10, 10);
+    var mat = new THREE.MeshLambertMaterial( {color: 0xff0000});
+    var mesh = new THREE.Mesh(geom, mat);
+    var group1 = new THREE.Object3D();
+    group1.add(mesh);
+    var group2 = new THREE.Object3D();
+    group2.add(mesh);
+
     //Scene hierarchy
     this.rootGroup = new THREE.Object3D();
     this.scenes[this.currentScene].add(this.rootGroup);
@@ -248,14 +257,14 @@ Tate.prototype.sortNodesByType = function() {
     this.groupRadius = 100;
     var numTypes = nodeTypes.length;
     var group, i;
-    var nodeTypeGroups = [];
+    this.nodeTypeGroups = [];
     for(i=0; i<numTypes; ++i) {
         group = new THREE.Object3D();
         group.name = nodeTypes[i];
-        nodeTypeGroups.push(group);
+        this.nodeTypeGroups.push(group);
         this.rootGroup.add(group);
     }
-    this.nodeTypeGroups = nodeTypeGroups;
+    //this.nodeTypeGroups = nodeTypeGroups;
     this.nodeTypes = nodeTypes;
 };
 
@@ -468,7 +477,7 @@ Tate.prototype.createCountryNode = function(country) {
         return undefined;
     }
     //Graphical attributes
-    countryNode.setAlign(0);
+    countryNode.setAlign(20);
     countryNode.setTextColour(LINES.LineColours.white);
     countryNode.createGeometry(this.baseGeom);
     countryNode.setIndex(-1);
@@ -488,8 +497,6 @@ Tate.prototype.createGUI = function() {
     var _this = this;
     var guiControls = function () {
         this.Background = '#5c5f64';
-        this.LabelWidth = 1.0;
-        this.LabelHeight = 1.0;
         this.LightX = 0;
         this.LightY = 50;
         this.LightZ = -600;
@@ -658,8 +665,6 @@ Tate.prototype.createGUI = function() {
 
     this.gui = gui;
     this.guiControls = controls;
-    //DEBUG
-    //this.onScaleChange(controls.ScaleFactor);
 };
 
 Tate.prototype.update = function() {
@@ -698,46 +703,39 @@ Tate.prototype.onLightChange = function(axis, pos) {
 Tate.prototype.onScaleChange = function(value) {
     //Change node height
 
-    var i;
-    var currentScale = this.lineNodes[0].scale.y;
-    for(i=0; i<this.lineNodes.length; ++i) {
-        this.lineNodes[i].scale.y = value;
-    }
-
-    for(i=0; i<this.pinNodes.length; ++i) {
-        this.pinNodes[i].position.y = (this.pinNodes[i].position.y/currentScale) * value;
-        this.labelNodes[i].position.y = this.pinNodes[i].position.y;
+    var i, numNodes;
+    for(i=0, numNodes=this.mapNodes.length; i<numNodes; ++i) {
+        this.mapNodes[i].scaleHeight(value);
     }
 };
 
-Tate.prototype.onYearChange = function(value) {
+Tate.prototype.onYearChange = function() {
     //Display nodes between year ranges
-    var i, node, nodeYear, max, min;
-    var currentScale = this.lineNodes[0].scale.y;
-    for(i=0; i<this.pinNodes.length; ++i) {
-        node = this.pinNodes[i];
-        if(!node.parent.visible) continue;
-        nodeYear = (node.position.y/currentScale);
+    var i, mapNode, nodeGroup, numNodes, nodeYear, max, min;
+    var currentScale = this.mapNodes[0].getLinkScale();
+    for(i=0, numNodes=this.mapNodes.length; i<numNodes; ++i) {
+        mapNode = this.mapNodes[i];
+        nodeGroup = this.mapNodes[i].getNodeGroup();
+        if(!nodeGroup.parent.visible) continue;
+        nodeYear = (mapNode.getHeight()/currentScale);
         max = this.guiControls.YearMax - this.minYear;
         min = this.guiControls.YearMin - this.minYear;
-        node.visible = (nodeYear <= max && nodeYear >= min);
-        this.lineNodes[i].visible = node.visible;
-        this.labelNodes[i].visible = node.visible;
+        mapNode.visible(nodeYear <= max && nodeYear >= min);
     }
 };
 
 Tate.prototype.onLabelScale = function(value, axis) {
-    var i, nodeLength = this.labelNodes.length;
+    var i, nodeLength = this.mapNodes.length;
     switch(axis) {
         case WIDTH:
             for(i=0; i<nodeLength; ++i) {
-                this.labelNodes[i].scale.x = value;
+                this.mapNodes[i].updateLabelWidth(value);
             }
             break;
 
         case HEIGHT:
             for(i=0; i<nodeLength; ++i) {
-                this.labelNodes[i].scale.y = value;
+                this.mapNodes[i].updateLabelHeight(value);
             }
             break;
 
@@ -888,32 +886,16 @@ Tate.prototype.onLinksChanged = function(value) {
 
 Tate.prototype.showGroups = function(groupName, value) {
     //Show/hide groups
-    var child, i, j, group;
+    var i, group;
     if(groupName === "ShowAll") {
-        for(i=0; i<this.mainNodeGroups.length; ++i) {
-            group = this.mainNodeGroups[i];
+        for(i=0; i<this.nodeTypeGroups.length; ++i) {
+            group = this.nodeTypeGroups[i];
             group.visible = value;
-            for(j=0; j<group.children.length; ++j) {
-                child = group.children[j];
-                if(child instanceof THREE.Sprite) {
-                    child.visible = value;
-                }
-            }
-        }
-        for(i=0; i<this.lineNodeGroups.length; ++i) {
-            group = this.lineNodeGroups[i];
-            group.visible = value;
-            for(j=0; j<group.children.length; ++j) {
-                child = group.children[j];
-                if(child instanceof THREE.Line) {
-                    child.visible = value;
-                }
-            }
         }
 
         //Update interface
-        for(i=0; i<this.nodeGroupTypes.length; ++i) {
-            this.guiControls[this.nodeGroupTypes[i]] = value;
+        for(i=0; i<this.nodeTypes.length; ++i) {
+            this.guiControls[this.nodeTypes[i]] = value;
         }
 
         return;
@@ -925,26 +907,8 @@ Tate.prototype.showGroups = function(groupName, value) {
         return;
     }
 
-    var lineGroup = this.scenes[this.currentScene].getObjectByName(groupName+"Line");
-    if(!lineGroup) {
-        console.log("Invalid group");
-        return;
-    }
-
     nodeGroup.visible = value;
-    for(i=0; i<nodeGroup.children.length; ++i) {
-        child = nodeGroup.children[i];
-        if(child instanceof THREE.Sprite) {
-            child.visible = value;
-        }
-    }
-    lineGroup.visible = value;
-    for(i=0; i<lineGroup.children.length; ++i) {
-        child = lineGroup.children[i];
-        if(child instanceof THREE.Line) {
-            child.visible = value;
-        }
-    }
+
     this.onYearChange();
 };
 

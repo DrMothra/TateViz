@@ -28,7 +28,7 @@ MapNode.prototype = {
         this.labelXScale = 100;
         this.labelYScale = 80;
         this.labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
-        this.alignment = 20;
+        this.alignment = 30;
         this.labelPosition = new THREE.Vector3();
         this.baseGeom = undefined;
 
@@ -136,6 +136,18 @@ MapNode.prototype = {
         return this.pin;
     },
 
+    visible: function(status) {
+        if(status === undefined) {
+            return this.nodeGroup.visible;
+        }
+
+        this.nodeGroup.visible = status;
+    },
+
+    getLinkScale: function() {
+        return this.link.scale.y;
+    },
+
     createLink: function() {
         var lineGeom = new THREE.Geometry();
         var to = new THREE.Vector3(0, 0, 0);
@@ -167,6 +179,30 @@ MapNode.prototype = {
         //Label
         this.label.position.x =  pos.x;
         this.label.position.z =  pos.z;
+    },
+
+    getHeight: function() {
+        return this.position.y;
+    },
+
+    scaleHeight: function(scale) {
+        //Link
+        var currentScale = this.link.scale.y;
+        this.link.scale.y = scale;
+
+        //Pin
+        this.pin.position.y = (this.pin.position.y/currentScale) * scale;
+
+        //Label
+        this.label.position.y = this.pin.position.y + this.alignment;
+    },
+
+    updateLabelWidth: function(width) {
+        this.label.scale.x = width;
+    },
+
+    updateLabelHeight: function(height) {
+        this.label.scale.y = height;
     },
 
     createLabel: function() {
