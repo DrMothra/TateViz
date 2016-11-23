@@ -20,6 +20,7 @@ MapNode.prototype = {
         this.colour = colour;
         this.textColour = colour;
         this.name = name;
+        this.isActive = true;
         this.nodePosition = new THREE.Vector3(position.x, position.y, position.z);
         this.position = new THREE.Vector3(0, position.y, 0);
         this.circleXScale = 30;
@@ -142,6 +143,12 @@ MapNode.prototype = {
         }
 
         this.nodeGroup.visible = status;
+    },
+
+    active: function(status) {
+        if (status === undefined) return this.isActive;
+
+        this.isActive = status;
     },
 
     getLinkScale: function() {

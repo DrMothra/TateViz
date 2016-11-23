@@ -50,15 +50,6 @@ Tate.prototype.createScene = function() {
     this.yMax = 500;
     this.yMin = -500;
 
-    //Test
-    var geom= new THREE.BoxBufferGeometry(10, 10, 10);
-    var mat = new THREE.MeshLambertMaterial( {color: 0xff0000});
-    var mesh = new THREE.Mesh(geom, mat);
-    var group1 = new THREE.Object3D();
-    group1.add(mesh);
-    var group2 = new THREE.Object3D();
-    group2.add(mesh);
-
     //Scene hierarchy
     this.rootGroup = new THREE.Object3D();
     this.scenes[this.currentScene].add(this.rootGroup);
@@ -95,6 +86,7 @@ Tate.prototype.createScene = function() {
     });
 
     //Groups
+    this.groupRadius = 100;
     this.sortNodesByType();
 
     //Do any pre-sorting
@@ -137,7 +129,7 @@ Tate.prototype.createScene = function() {
             this.mapNodes.push(mapNode);
 
             nodeGroup = mapNode.getNodeGroup();
-            this.nodeTypeGroups[typeIndex].add(nodeGroup);
+            this.nodeTypeGroups[typeIndex].push(mapNode);
 
             //Information
             mapInfoNode = new MapNodeInfo();
@@ -254,17 +246,15 @@ Tate.prototype.sortNodesByType = function() {
         "Institutions - Other",
         "Public"
     ];
-    this.groupRadius = 100;
+
     var numTypes = nodeTypes.length;
-    var group, i;
-    this.nodeTypeGroups = [];
+    var typeNodes, i;
+    var nodeTypeGroups = [];
     for(i=0; i<numTypes; ++i) {
-        group = new THREE.Object3D();
-        group.name = nodeTypes[i];
-        this.nodeTypeGroups.push(group);
-        this.rootGroup.add(group);
+        typeNodes = [];
+        nodeTypeGroups.push(typeNodes);
     }
-    //this.nodeTypeGroups = nodeTypeGroups;
+    this.nodeTypeGroups = nodeTypeGroups;
     this.nodeTypes = nodeTypes;
 };
 
@@ -702,7 +692,6 @@ Tate.prototype.onLightChange = function(axis, pos) {
 
 Tate.prototype.onScaleChange = function(value) {
     //Change node height
-
     var i, numNodes;
     for(i=0, numNodes=this.mapNodes.length; i<numNodes; ++i) {
         this.mapNodes[i].scaleHeight(value);
@@ -715,6 +704,7 @@ Tate.prototype.onYearChange = function() {
     var currentScale = this.mapNodes[0].getLinkScale();
     for(i=0, numNodes=this.mapNodes.length; i<numNodes; ++i) {
         mapNode = this.mapNodes[i];
+        if(!mapNode.active()) continue;
         nodeGroup = this.mapNodes[i].getNodeGroup();
         if(!nodeGroup.parent.visible) continue;
         nodeYear = (mapNode.getHeight()/currentScale);
@@ -886,11 +876,15 @@ Tate.prototype.onLinksChanged = function(value) {
 
 Tate.prototype.showGroups = function(groupName, value) {
     //Show/hide groups
-    var i, group;
+    var i, j, nodeList, numGroups, numNodes;
     if(groupName === "ShowAll") {
-        for(i=0; i<this.nodeTypeGroups.length; ++i) {
-            group = this.nodeTypeGroups[i];
-            group.visible = value;
+        numGroups = this.nodeTypeGroups.length;
+        for(i=0; i<numGroups; ++i) {
+            nodeList = this.nodeTypeGroups[i];
+            for(j=0, numNodes=nodeList.length; j<numNodes; ++j) {
+                nodeList[j].visible(value);
+                nodeList[j].active(value);
+            }
         }
 
         //Update interface
@@ -901,15 +895,14 @@ Tate.prototype.showGroups = function(groupName, value) {
         return;
     }
 
-    var nodeGroup = this.scenes[this.currentScene].getObjectByName(groupName);
-    if(!nodeGroup) {
-        console.log("Invalid group");
-        return;
+    var typeIndex = this.getTypeIndex(groupName);
+    nodeList = this.nodeTypeGroups[typeIndex];
+    for(j=0, numNodes=nodeList.length; j<numNodes; ++j) {
+        nodeList[j].visible(value);
+        nodeList[j].active(value);
     }
 
-    nodeGroup.visible = value;
-
-    this.onYearChange();
+    //this.onYearChange();
 };
 
 Tate.prototype.moveCamera = function(direction) {
