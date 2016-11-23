@@ -169,11 +169,11 @@ Tate.prototype.createScene = function() {
         [POLAND, UK],
         [UK]
     ];
-    var links, link;
+    var links, link, numArtists;
     var linkGroup = new THREE.Object3D();
     linkGroup.visible = false;
     this.rootGroup.add(linkGroup);
-    for(i=0, len=this.multipleArtists.length; i<len; ++i) {
+    for(i=0, numArtists=this.multipleArtists.length; i<numArtists; ++i) {
         ids = this.multipleArtists[i].nodes;
         for(j=0, nodeLength=ids.length; j<nodeLength; ++j) {
             labelPos.add(this.getMapNodePosition(ids[j]));
@@ -279,6 +279,7 @@ Tate.prototype.sortNodesByCountry = function() {
                 countryGroup = this.scenes[this.currentScene].getObjectByName(country+'Group');
                 if(!countryGroup) continue;
                 countryGroup.add(this.mapNodes[i].getNodeGroup());
+                countryGroup.mapNodeIDs.push(i);
                 break;
             }
         }
@@ -303,6 +304,8 @@ Tate.prototype.sortNodesByCountry = function() {
             countryGroups.push(countryGroup);
             countryGroup.add(this.mapNodes[i].getNodeGroup());
             countryGroup.visible = true;
+            countryGroup.mapNodeIDs = [];
+            countryGroup.mapNodeIDs.push(i);
             this.rootGroup.add(countryGroup);
         }
     }
@@ -326,10 +329,19 @@ Tate.prototype.sortCountryPosition = function() {
         this.countryGroups[i].position.set(total.x, 0, total.z);
         this.countryGroups[i].radius = this.groupRadius;
         //DEBUG
-        //this.resizeGroup(this.countryGroups[i]);
-        this.updateMapNodes(this.countries[i], this.groupRadius, total);
+        this.resizeGroup(this.countryGroups[i]);
+        //this.resizeMapNodes(this.countryGroups[i]);
         total.set(0, 0, 0);
     }
+
+    //Reset all children position
+    var numGroups;
+    for(i=0, numGroups=this.countryGroups.length; i<numGroups; ++i) {
+        for(j=0, children=this.countryGroups[i].children.length; j<children; ++j) {
+            this.countryGroups[i].children[j].position.set(0, 0, 0);
+        }
+    }
+
 };
 
 Tate.prototype.getTypeIndex = function(type) {
@@ -423,26 +435,27 @@ Tate.prototype.resizeGroup = function(group) {
     if(length <= 1) {
         group.radius = 0;
     }
-    var child, groupAngle, i;
+    var child, groupAngle, i, to = new THREE.Vector3();
     for(i=0; i<length; ++i) {
         groupAngle = (Math.PI*2) / length;
-        child = group.children[i];
-        child.position.set(group.radius * Math.sin(groupAngle*i), 0, group.radius * Math.cos(groupAngle*i));
+        child = group.mapNodeIDs[i];
+        //child.position.set(group.radius * Math.sin(groupAngle*i), 0, group.radius * Math.cos(groupAngle*i));
+        to.set(group.radius * Math.sin(groupAngle*i), 0, group.radius * Math.cos(groupAngle*i));
+        this.mapNodes[child].updatePosition(to);
     }
 };
 
-Tate.prototype.updateMapNodes = function(country, radius, to) {
-    var numChildren = country.nodeIds.length;
+Tate.prototype.resizeMapNodes = function(group) {
+    var numChildren = group.children.length;
     if(numChildren <= 1) {
-        return;
+        group.radius = 0;
     }
 
-    var node, groupAngle, i, from = new THREE.Vector3();
-    for(i=0; i<numChildren; ++i) {
-        groupAngle = (Math.PI*2) / numChildren;
-        node = country.nodeIds[i];
-        from.set(radius * Math.sin(groupAngle*i), 0, radius * Math.cos(groupAngle*i));
-        this.mapNodes[node].updateLink(from, to);
+    var groupAngle = (Math.PI*2) / numChildren;
+    var i, numNodes, from=new THREE.Vector3(0, 60, 0), to=new THREE.Vector3();
+    for(i=0, numNodes=group.mapNodeIDs.length; i<numNodes; ++i) {
+        to.set(group.radius * Math.sin(groupAngle*i), 0, group.radius * Math.cos(groupAngle*i));
+        this.mapNodes[i].updateLink(from, to);
     }
 };
 
@@ -631,7 +644,7 @@ Tate.prototype.createGUI = function() {
 
     var numNodes = countries.add(controls, "Nodes").listen();
 
-    var groupScale = countries.add(controls, "GroupScale", this.groupRadius, 500);
+    var groupScale = countries.add(controls, "GroupScale", this.groupRadius, 750);
     groupScale.onChange(function(value) {
         _this.onGroupScaleChange(value);
     });

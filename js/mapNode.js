@@ -28,7 +28,7 @@ MapNode.prototype = {
         this.labelXScale = 100;
         this.labelYScale = 80;
         this.labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
-        this.alignment = 50;
+        this.alignment = 20;
         this.labelPosition = new THREE.Vector3();
         this.baseGeom = undefined;
 
@@ -148,16 +148,31 @@ MapNode.prototype = {
         return this.link;
     },
 
-    updateLink: function(from, to) {
-        this.link.geometry.vertices[0].copy(from);
-        this.link.geometry.vertices[1].copy(to);
+    updateLink: function(from) {
+        this.link.geometry.vertices[0].x = from.x;
+        this.link.geometry.vertices[0].z = from.z;
+        this.link.geometry.verticesNeedUpdate = true;
+    },
+
+    updatePosition: function(pos) {
+        //Link
+        this.link.geometry.vertices[0].x = pos.x;
+        this.link.geometry.vertices[0].z = pos.z;
+        this.link.geometry.verticesNeedUpdate = true;
+
+        //Pin
+        this.pin.position.x = pos.x;
+        this.pin.position.z = pos.z;
+
+        //Label
+        this.label.position.x =  pos.x;
+        this.label.position.z =  pos.z;
     },
 
     createLabel: function() {
         var limit = 20;
         this.labelPosition.copy(this.position);
-        this.labelPosition.x -= this.alignment;
-        this.labelPosition.y += this.alignment ? 0 : 20;
+        this.labelPosition.y += this.alignment;
         return spriteManager.create(this.name, limit, this.textColour, this.labelPosition, this.labelScale, 32, 1, true, true);
     },
 
