@@ -86,7 +86,7 @@ Tate.prototype.createScene = function() {
     });
 
     //Groups
-    this.groupRadius = 100;
+    this.groupRadius = 200;
     this.sortNodesByType();
 
     //Do any pre-sorting
@@ -665,14 +665,32 @@ Tate.prototype.update = function() {
         var name = this.selectedObject.name;
         var index = name.indexOf("Label");
         if(index >= 0 && index === name.length-5) {
-            name = name.substr(-5);
+            name = name.substr(0, name.length-5);
         }
-        $('#infoName').html(this.selectedObject.name);
-        $('#nodeInfo').show();
+        var country = this.getCountry(name);
+        //DEBUG
+            console.log("Country = ", country);
+        if(country) {
+            $('#countryName').html(name);
+            $('#countryInfo').show();
+        } else {
+            $('#nodeName').html(name);
+            $('#nodeInfo').show();
+        }
+
         this.selectedObject = null;
     }
 
     BaseApp.prototype.update.call(this);
+};
+
+Tate.prototype.getCountry = function(name) {
+    var i, numCountries;
+    for(i=0, numCountries=this.countries.length; i<numCountries; ++i) {
+        if(name === this.countries[i].name) return true;
+    }
+
+    return false;
 };
 
 Tate.prototype.onLightChange = function(axis, pos) {
@@ -1017,6 +1035,10 @@ Tate.prototype.camOffset = function(direction) {
     }
 };
 
+Tate.prototype.dismissInfo = function() {
+    $('#nodeInfo').hide();
+};
+
 $(document).ready(function() {
     //See if we have WebGL support
     if(!Detector.webgl) {
@@ -1041,6 +1063,10 @@ $(document).ready(function() {
 
     $("[id^=cam]").on("click", function() {
         app.camOffset(this.id);
+    });
+
+    $("#close").on("click", function() {
+        app.dismissInfo();
     });
 
     app.run();
