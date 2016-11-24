@@ -661,6 +661,16 @@ Tate.prototype.update = function() {
     //Perform any updates
 
     var delta = this.clock.getDelta();
+    if(this.selectedObject !== null) {
+        var name = this.selectedObject.name;
+        var index = name.indexOf("Label");
+        if(index >= 0 && index === name.length-5) {
+            name = name.substr(-5);
+        }
+        $('#infoName').html(this.selectedObject.name);
+        $('#nodeInfo').show();
+        this.selectedObject = null;
+    }
 
     BaseApp.prototype.update.call(this);
 };

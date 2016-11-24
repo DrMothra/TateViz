@@ -107,15 +107,15 @@ BaseApp.prototype.mouseClicked = function(event) {
     this.raycaster.setFromCamera(this.mouse, this.camera);
     var intersects = this.raycaster.intersectObjects( this.scenes[this.currentScene].children, true );
     if(intersects.length > 0) {
-        //Ignore sprites
-        for(var i=0; i<intersects.length; ++i) {
-            if(intersects[i].object.type === "Mesh") {
-                //console.log("Picked ", intersects[i]);
-                this.selectedObject = intersects[i].object;
-                return;
-            }
+        //Only want sprites for now
+        var i, numObjects = intersects.length;
+        for(i=0; i<numObjects; ++i) {
+            if(intersects[i].object.type !== "Sprite") continue;
+            this.selectedObject = intersects[i].object;
+            return;
         }
-        return null;
+    } else {
+        this.selectedObject = null;
     }
 };
 
