@@ -29,7 +29,7 @@ MapNode.prototype = {
         this.labelXScale = 100;
         this.labelYScale = 80;
         this.labelScale = new THREE.Vector3(this.labelXScale, this.labelYScale, 1);
-        this.alignment = 30;
+        this.alignment = 20;
         this.labelPosition = new THREE.Vector3();
         this.baseGeom = undefined;
 
@@ -110,6 +110,10 @@ MapNode.prototype = {
 
     getIndex: function() {
         return this.index;
+    },
+
+    getType: function() {
+        return this.type;
     },
 
     setAlign: function(alignment) {

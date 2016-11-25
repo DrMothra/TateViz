@@ -86,7 +86,7 @@ Tate.prototype.createScene = function() {
     });
 
     //Groups
-    this.groupRadius = 200;
+    this.groupRadius = 300;
     this.sortNodesByType();
 
     //Do any pre-sorting
@@ -670,8 +670,17 @@ Tate.prototype.update = function() {
         var country = this.getCountry(name);
         if(country) {
             var info = this.getCountryInfo(name);
-            $('#countryName').html(name);
-            $('#countryInfo').show();
+            if(info !== undefined) {
+                var key, typeNum=0;
+                for(key in info.typeInfo) {
+                    $('#typeName'+typeNum).html(key + " : ");
+                    $('#typeNumber'+typeNum).html(info.typeInfo[key]);
+                    ++typeNum;
+                }
+                $('#numNodes').html(info.numNodes);
+                $('#countryName').html(name);
+                $('#countryInfo').show();
+            }
         } else {
             var mapNode = this.getMapNode(name);
             if(mapNode !== undefined) {
@@ -696,6 +705,28 @@ Tate.prototype.getCountry = function(name) {
     }
 
     return false;
+};
+
+Tate.prototype.getCountryInfo = function(country) {
+    var group = this.scenes[this.currentScene].getObjectByName(country+'Group');
+    if(!group) return undefined;
+
+    var i, childNode, numChildren, type;
+    var infoNode = {};
+    infoNode.numNodes = group.children.length;
+    var typeInfo = {};
+    for(i=0, numChildren=group.mapNodeIDs.length; i<numChildren; ++i) {
+        childNode = this.mapNodes[group.mapNodeIDs[i]];
+        type = childNode.getType();
+        if(!typeInfo[type]) {
+            typeInfo[type] = 1;
+        } else {
+            typeInfo[type] +=1;
+        }
+    }
+    infoNode.typeInfo = typeInfo;
+
+    return infoNode;
 };
 
 Tate.prototype.getMapNode = function(name) {
