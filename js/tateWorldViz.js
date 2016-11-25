@@ -729,6 +729,15 @@ Tate.prototype.getCountryInfo = function(country) {
     return infoNode;
 };
 
+Tate.prototype.clearCountryInfo = function() {
+    var i, typeNum=0, numTypes=6;
+    for(i=0; i<numTypes; ++i) {
+        $('#typeName'+typeNum).html("");
+        $('#typeNumber'+typeNum).html("");
+        ++typeNum;
+    }
+};
+
 Tate.prototype.getMapNode = function(name) {
     var i, node, numNodes;
     for(i=0, numNodes=this.mapNodes.length; i<numNodes; ++i) {
@@ -1087,6 +1096,7 @@ Tate.prototype.dismissNodeInfo = function() {
 
 Tate.prototype.dismissCountryInfo = function() {
     $('#countryInfo').hide();
+    this.clearCountryInfo();
 };
 
 $(document).ready(function() {
