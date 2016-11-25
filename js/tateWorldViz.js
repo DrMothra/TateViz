@@ -668,14 +668,19 @@ Tate.prototype.update = function() {
             name = name.substr(0, name.length-5);
         }
         var country = this.getCountry(name);
-        //DEBUG
-            console.log("Country = ", country);
         if(country) {
+            var info = this.getCountryInfo(name);
             $('#countryName').html(name);
             $('#countryInfo').show();
         } else {
-            $('#nodeName').html(name);
-            $('#nodeInfo').show();
+            var mapNode = this.getMapNode(name);
+            if(mapNode !== undefined) {
+                index = mapNode.getIndex();
+                $('#start').html(tateData[index].Start);
+                $('#description').html(tateData[index].Description);
+                $('#nodeName').html(name);
+                $('#nodeInfo').show();
+            }
         }
 
         this.selectedObject = null;
@@ -691,6 +696,16 @@ Tate.prototype.getCountry = function(name) {
     }
 
     return false;
+};
+
+Tate.prototype.getMapNode = function(name) {
+    var i, node, numNodes;
+    for(i=0, numNodes=this.mapNodes.length; i<numNodes; ++i) {
+        node = this.mapNodes[i];
+        if(name === node.getName()) return node;
+    }
+
+    return undefined;
 };
 
 Tate.prototype.onLightChange = function(axis, pos) {
@@ -1035,8 +1050,12 @@ Tate.prototype.camOffset = function(direction) {
     }
 };
 
-Tate.prototype.dismissInfo = function() {
+Tate.prototype.dismissNodeInfo = function() {
     $('#nodeInfo').hide();
+};
+
+Tate.prototype.dismissCountryInfo = function() {
+    $('#countryInfo').hide();
 };
 
 $(document).ready(function() {
@@ -1065,8 +1084,12 @@ $(document).ready(function() {
         app.camOffset(this.id);
     });
 
-    $("#close").on("click", function() {
-        app.dismissInfo();
+    $("#closeNode").on("click", function() {
+        app.dismissNodeInfo();
+    });
+
+    $("#closeCountry").on("click", function() {
+        app.dismissCountryInfo();
     });
 
     app.run();

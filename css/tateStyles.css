@@ -15,6 +15,9 @@
 .infoPanel {
     position: absolute;
 }
+.scroll {
+    overflow: auto;
+}
 #notSupported {
     background: #a9434a;
     border-radius: 15px;
@@ -95,7 +98,13 @@
     text-align: center;
     font-size: 1.5vw;
 }
-#close {
+#nodeName {
+    font-weight: bold;
+}
+#description {
+    height: 32vh;
+}
+#closeNode, #closeCountry {
     position: absolute;
     right: 2%;
     bottom: 2%;

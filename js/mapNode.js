@@ -108,6 +108,10 @@ MapNode.prototype = {
         this.index = index;
     },
 
+    getIndex: function() {
+        return this.index;
+    },
+
     setAlign: function(alignment) {
         this.alignment = alignment;
     },
@@ -235,5 +239,9 @@ MapNode.prototype = {
 
     getNodeGroupPosition: function() {
         return this.nodePosition;
+    },
+
+    getName: function() {
+        return this.name;
     }
 };
