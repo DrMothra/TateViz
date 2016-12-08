@@ -99,6 +99,7 @@ Tate.prototype.createScene = function() {
     this.labelYScale = 80;
 
     //Keep record of node parts
+
     var numNodes = tateData.length;
 
     this.mapNodes = [];
@@ -146,6 +147,10 @@ Tate.prototype.createScene = function() {
             this.mapInfoNodes.push(mapInfoNode);
             mapInfoNode.setIndex(i);
             mapInfoNode.setCountry(tateData[i].Country);
+            //DEBUG
+            if(tateData[i].Country === undefined) {
+                console.log("Data = ", name);
+            }
         }
     }
 
@@ -174,6 +179,8 @@ Tate.prototype.createScene = function() {
     var linkGroup = new THREE.Object3D();
     linkGroup.visible = false;
     this.rootGroup.add(linkGroup);
+    //DEBUG
+    /*
     for(i=0, numArtists=this.multipleArtists.length; i<numArtists; ++i) {
         ids = this.multipleArtists[i].nodes;
         for(j=0, nodeLength=ids.length; j<nodeLength; ++j) {
@@ -191,6 +198,7 @@ Tate.prototype.createScene = function() {
         }
         labelPos.set(0, 0, 0);
     }
+    */
     this.linkGroup = linkGroup;
 
     //Sort by country
