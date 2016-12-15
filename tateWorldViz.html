@@ -10,6 +10,8 @@
     <script type="text/javascript" src="js/three81.js"></script>
     <script type="text/javascript" src="js/TrackballControls.js"></script>
     <script type="text/javascript" src="js/detector.js"></script>
+    <script type="text/javascript" src="js/dataLoader.js"></script>
+    <script type="text/javascript" src="js/fileManager.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/stats.js"></script>
     <script type="text/javascript" src="js/spriteManager.js"></script>
@@ -122,6 +124,12 @@
 <div id="generalInfo" class="infoPanel">
     <div>
         <img src="images/infoOrange.png" data-toggle="modal" data-target="#infoModal">
+    </div>
+</div>
+
+<div id="fileChooser" class="infoPanel">
+    <div>
+        <span id="chooseFile" class="btn btn-primary btn-file">Load<input type="file" accept=".json, application/json"></span>
     </div>
 </div>
 

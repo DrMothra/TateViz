@@ -20,6 +20,9 @@ Tate.prototype = new BaseApp();
 Tate.prototype.init = function(container) {
     BaseApp.prototype.init.call(this, container);
 
+    //Load external data
+    this.dataLoader = new dataLoader();
+
     //Key repeats
     this.keyRepeatTimer = undefined;
     this.checkTime = 50;
@@ -59,7 +62,7 @@ Tate.prototype.createScene = function() {
     this.defaultCamPosZ = 700;
     this.currentLookAt = new THREE.Vector3();
     this.camera.position.set(0, this.defaultCamPosY, this.defaultCamPosZ);
-    this.zoomInc = 1/100;
+    this.zoomInc = 1 / 100;
 
     //Offsets
     var viewOffset = 200;
@@ -85,21 +88,36 @@ Tate.prototype.createScene = function() {
         _this.worldMesh.visible = false;
     });
 
-    //Groups
-    this.groupRadius = 300;
-    this.sortNodesByType();
-
-    //Do any pre-sorting
-    this.getYearRanges();
-
+    //Nodes
     var nodeRadius = 5, nodeSegments = 24;
     this.baseGeom = new THREE.SphereBufferGeometry(nodeRadius, nodeSegments, nodeSegments);
     var pos = new THREE.Vector3();
     this.labelXScale = 100;
     this.labelYScale = 80;
 
-    //Keep record of node parts
+    //Groups
+    this.groupRadius = 300;
 
+    //Add content to scene
+    this.addSceneContent();
+};
+
+Tate.prototype.clearScene = function() {
+    //Clear things for new scene
+    this.scenes[this.currentScene].remove(this.rootGroup);
+    this.rootGroup = new THREE.Object3D();
+    this.scenes[this.currentScene].add(this.rootGroup);
+};
+
+Tate.prototype.addSceneContent = function() {
+
+    this.preSortData();
+    this.sortNodesByType();
+
+    //Do any pre-sorting
+    this.getYearRanges();
+
+    //Keep record of node parts
     var numNodes = tateData.length;
 
     this.mapNodes = [];
@@ -206,6 +224,21 @@ Tate.prototype.createScene = function() {
 
     //Calculate each country position
     this.sortCountryPosition();
+};
+
+Tate.prototype.preSortData = function() {
+    //Remove whitespace around categories
+    var i, dataItem, key, attribute;
+    for (i = 0; i < tateData.length; ++i) {
+        dataItem = tateData[i];
+        for (key in dataItem) {
+            attribute = dataItem[key];
+            //console.log("Item = ", attribute);
+            if (typeof attribute === 'string' && attribute !== "" && attribute !== null) {
+                dataItem[key] = attribute.trim();
+            }
+        }
+    }
 };
 
 Tate.prototype.createMaps = function() {
@@ -1107,6 +1140,33 @@ Tate.prototype.dismissCountryInfo = function() {
     this.clearCountryInfo();
 };
 
+Tate.prototype.loadNewFile = function(file) {
+    if(!file) {
+        alert("No file selected!");
+        return;
+    }
+    //Reset everything
+    this.file = file;
+
+    //Reset current scene
+    this.clearScene();
+
+    //Render new data
+    var _this = this;
+    window.URL = window.URL || window.webkitURL;
+
+    var fileUrl = window.URL.createObjectURL(this.file);
+    this.dataLoader.load(fileUrl, function(data) {
+        //_this.data = data;
+        tateData = data;
+        //DEBUG
+        console.log("File loaded");
+        _this.addSceneContent();
+        _this.gui.destroy();
+        _this.createGUI();
+    });
+};
+
 $(document).ready(function() {
     //See if we have WebGL support
     if(!Detector.webgl) {
@@ -1139,6 +1199,10 @@ $(document).ready(function() {
 
     $("#closeCountry").on("click", function() {
         app.dismissCountryInfo();
+    });
+
+    $("#chooseFile").on("change", function(evt) {
+        app.loadNewFile(fileManager.onSelectFile(evt));
     });
 
     app.run();
