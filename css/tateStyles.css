@@ -154,6 +154,13 @@
     left: 15%;
     bottom: 3%;
 }
+#fileConverter {
+    left:5%;
+    top:10%;
+}
+#fileConverter div {
+    margin-bottom: 30%;
+}
 .btn-file {
     position: relative;
     overflow: hidden;
