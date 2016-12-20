@@ -4,23 +4,20 @@
 //Loads and parses json files from local storage
 
 var dataLoader = function () {
-    THREE.Loader.call( this, false );
-
-    this.withCredentials = false;
+    this.convertData = false;
 };
 
-dataLoader.prototype = Object.create(THREE.Loader.prototype);
+dataLoader.prototype.conversionRequired = function(convert) {
+    this.convertData = convert;
+};
 
 dataLoader.prototype.load = function(url, callback) {
-    this.onLoadStart();
-    this.loadAjaxJSON(this, url, callback);
+    this.loadAjaxData(this, url, callback);
 };
 
-dataLoader.prototype.loadAjaxJSON = function(context, url, callback) {
+dataLoader.prototype.loadAjaxData = function(context, url, callback) {
     var xhr = new XMLHttpRequest();
-
-    var callbackProgress = null;
-
+    var _this = this;
     var length = 0;
 
     xhr.onreadystatechange = function () {
@@ -31,7 +28,11 @@ dataLoader.prototype.loadAjaxJSON = function(context, url, callback) {
 
                 if ( xhr.responseText ) {
 
-                    var json = JSON.parse( xhr.responseText );
+                    var data = xhr.responseText;
+                    if(_this.convertData) {
+                        data = _this.convert(data);
+                    }
+                    var json = JSON.parse( data );
 
                     callback( json );
 
@@ -41,12 +42,6 @@ dataLoader.prototype.loadAjaxJSON = function(context, url, callback) {
 
                 }
 
-                // in context of more complex asset initialization
-                // do not block on single failed file
-                // maybe should go even one more level up
-
-                context.onLoadComplete();
-
             } else {
 
                 console.error( 'DataLoader: Couldn\'t load "' + url + '" (' + xhr.status + ')' );
@@ -55,31 +50,25 @@ dataLoader.prototype.loadAjaxJSON = function(context, url, callback) {
 
         } else if ( xhr.readyState === xhr.LOADING ) {
 
-            if ( callbackProgress ) {
-
-                if ( length === 0 ) {
-
-                    length = xhr.getResponseHeader( 'Content-Length' );
-
-                }
-
-                callbackProgress( { total: length, loaded: xhr.responseText.length } );
-
-            }
 
         } else if ( xhr.readyState === xhr.HEADERS_RECEIVED ) {
 
-            if ( callbackProgress !== undefined ) {
-
-                length = xhr.getResponseHeader( 'Content-Length' );
-
-            }
 
         }
 
     };
 
     xhr.open( 'GET', url, true );
-    xhr.withCredentials = this.withCredentials;
     xhr.send( null );
+};
+
+dataLoader.prototype.convert = function(data) {
+    var parseOutput = parse(data, true , "auto", false, false);
+
+    var dataGrid = parseOutput.dataGrid;
+    var headerNames = parseOutput.headerNames;
+    var headerTypes = parseOutput.headerTypes;
+    var errors = parseOutput.errors;
+
+    return dataGridRenderer(dataGrid, headerNames, headerTypes, "  ", "\n");
 };

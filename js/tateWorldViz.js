@@ -1146,9 +1146,9 @@ Tate.prototype.loadNewFile = function(file) {
         return;
     }
     //See if conversion necessary
-    if(file.name.slice(-3) === ".csv") {
+    if(file.name.slice(-4) === ".csv") {
         //Convert
-        console.log("Converting csv to json");
+        this.dataLoader.conversionRequired(true);
     }
     //Reset everything
     this.file = file;
