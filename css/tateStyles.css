@@ -42,6 +42,9 @@
     margin-left: 33%;
     width: 25%;
 }
+.title {
+    margin: 0 1%;
+}
 .dg .c input[type=text] {
     line-height:normal;
 }
@@ -155,8 +158,8 @@
     bottom: 3%;
 }
 #fileConverter {
-    left:5%;
-    top:10%;
+    left: 5%;
+    top: 30%;
 }
 #fileConverter div {
     margin-bottom: 30%;
