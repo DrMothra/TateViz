@@ -20,18 +20,39 @@
 
 <div id="nodeInfo" class="infoPanel noDisplay">
     <div>
-        <span>Name : </span><span id="infoName">Artwork 1</span>
+        <span id="nodeName"></span>
     </div>
     <div>
-        <span>Year : </span><span id="infoYear">1999</span>
+        <span>Date: </span><span id="start"></span>
     </div>
     <div>
-        <span>Artist : </span><span id="infoArtist">A.N. Artist</span>
-    </div>
-    <div>
-        <button id="infoOK" class="infoButton">OK</button>
-    </div>
+        <p id="description" class="scroll">
 
+        </p>
+    </div>
+    <div id="closeNode">
+        <button type="button" class="btn btn-default">Close</button>
+    </div>
+</div>
+
+<div id="countryInfo" class="infoPanel noDisplay">
+    <div>
+        <span id="countryName"></span>
+    </div>
+    <div>
+        <span>Number of Artworks : </span><span id="numNodes"></span>
+    </div>
+    <div id="contents">
+        <p><span id="typeName0"></span><span id="typeNumber0"></span></p>
+        <p><span id="typeName1"></span><span id="typeNumber1"></span></p>
+        <p><span id="typeName2"></span><span id="typeNumber2"></span></p>
+        <p><span id="typeName3"></span><span id="typeNumber3"></span></p>
+        <p><span id="typeName4"></span><span id="typeNumber4"></span></p>
+        <p><span id="typeName5"></span><span id="typeNumber5"></span></p>
+    </div>
+    <div id="closeCountry">
+        <button type="button" class="btn btn-default">Close</button>
+    </div>
 </div>
 
 <div id="navigation" class="infoPanel">
@@ -83,6 +104,12 @@
     </div>
 </div>
 
+<div id="fileChooser" class="infoPanel">
+    <div>
+        <span id="chooseFile" class="btn btn-primary btn-file">Load<input type="file" accept=".json, .csv"></span>
+    </div>
+</div>
+
 <div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -120,7 +147,7 @@
 
 <div id="nodeInformation" class="infoPanel noDisplay">
     <div>
-        <span id="nodeName"></span>
+        <span id="oldnodeName"></span>
     </div>
     <div>
         <p id="nodeDescription"></p>
